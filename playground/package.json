@@ -1,0 +1,14 @@
+{
+  "name": "docusite-playground",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "docs:dev": "docusite dev",
+    "docs:build": "docusite build",
+    "docs:preview": "docusite preview"
+  },
+  "devDependencies": {
+    "docusite": "workspace:*",
+    "vue": "^3.5.0"
+  }
+}
