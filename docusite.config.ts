@@ -24,6 +24,7 @@ export default defineConfig({
         items: [
           { text: 'Конфигурация', link: '/guide/configuration' },
           { text: 'Фирменные цвета', link: '/guide/brand-colors' },
+          { text: 'Иконки features', link: '/guide/feature-icons' },
           { text: 'Поиск', link: '/guide/search' },
           { text: 'llms.txt', link: '/guide/llms' },
           { text: 'Changelog', link: '/guide/changelog' },

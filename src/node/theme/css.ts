@@ -228,6 +228,13 @@ html.dark {
   border-radius: 12px;
 }
 
+#app .VPFeature .icon [class*="i-"] {
+  display: inline-block;
+  vertical-align: middle;
+  width: 1.2em;
+  height: 1.2em;
+}
+
 /* ── Home layout: fill page ── */
 .VPHome {
   flex: 1;

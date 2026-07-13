@@ -16,6 +16,15 @@ hero:
       link: /api/overview
 
 features:
+  - title: MobX-based
+    icon: <span class="i-logos:mobx"></span>
+    details: Experience the power of MobX
+  - title: TypeScript
+    icon: <span class="i-logos:typescript-icon"></span>
+    details: First-class TypeScript support for config and content
+  - title: VitePress Powered
+    icon: <span class="i-logos:vitejs"></span>
+    details: Built on top of VitePress with full compatibility
   - title: Brand Colors
     icon: 🎨
     details: Auto-generate all VitePress CSS variables from a single brand color
@@ -31,7 +40,4 @@ features:
   - title: i18n
     icon: 🌍
     details: Multi-language support via VitePress locales
-  - title: VitePress Powered
-    icon: ⚡
-    details: Built on top of VitePress with full compatibility
 ---

@@ -30,7 +30,7 @@ export default defineConfig({
 
 ### Объект — копирование файла
 
-Docusite скопирует указанный CHANGELOG.md в директорию `docs/` и добавит ссылку в навигацию:
+Docusite скопирует указанный `CHANGELOG.md` в `docs/changelog.md` при сборке и добавит ссылку в навигацию. Сгенерированный файл не нужно коммитить — docusite добавляет `changelog.md` в `docs/.gitignore` автоматически.
 
 ```ts
 import { defineConfig } from 'docusite'

@@ -16,6 +16,9 @@ hero:
       link: /guide/configuration
 
 features:
+  - title: Иконки Iconify
+    icon: <span class="i-logos:mobx"></span>
+    details: Логотипы технологий в карточках features через UnoCSS — без настройки
   - title: Фирменные цвета
     icon: 🎨
     details: Автоматическая генерация CSS-переменных VitePress из одного бренда-цвета или градиента из трёх цветов

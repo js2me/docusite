@@ -167,6 +167,11 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
     vpConfig.vite.plugins.push({ __docusite_llms_dev: true, __docusite_llms_dev_docsDir: docsDir } as any)
   }
 
+  // -- UnoCSS icons (i-logos:*, etc.) --
+  vpConfig.vite = vpConfig.vite ?? {}
+  vpConfig.vite.plugins = vpConfig.vite.plugins ?? []
+  vpConfig.vite.plugins.push({ __docusite_unocss: true, __docusite_unocss_docsDir: docsDir } as any)
+
   // -- Custom CSS --
   if (config.customCss?.length) {
     vpConfig.vite = vpConfig.vite ?? {}

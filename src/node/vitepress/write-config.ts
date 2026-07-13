@@ -9,6 +9,11 @@ const llmsPluginDir = dirname(
   fileURLToPath(import.meta.resolve('vitepress-plugin-llms')),
 )
 
+// Resolve UnoCSS paths from docusite's installation (for iconify icons in feature cards)
+const unocssVitePath = fileURLToPath(import.meta.resolve('unocss/vite'))
+const unocssMainPath = fileURLToPath(import.meta.resolve('unocss'))
+const iconifyLogosPath = fileURLToPath(import.meta.resolve('@iconify-json/logos/icons.json'))
+
 /**
  * Find docusite's dist directory by resolving from the CLI bundle.
  * Since tsup bundles everything into dist/node/cli.js,
@@ -154,6 +159,32 @@ const CONTENT_INJECTIONS_PLUGIN_CODE = `function __docusite_content_injections_p
   }
 }`
 
+const UNOCSS_ICON_SCAN_CODE = `function __docusite_scan_icon_classes(docsDir) {
+  const icons = new Set()
+  const re = /\\bi-([a-z0-9-]+:[a-z0-9-]+)\\b/gi
+
+  function walk(dir) {
+    let entries
+    try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return }
+    for (const entry of entries) {
+      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue
+      const fullPath = join(dir, entry.name)
+      if (entry.isDirectory()) {
+        walk(fullPath)
+      } else if (entry.isFile() && entry.name.endsWith('.md')) {
+        try {
+          const text = readFileSync(fullPath, 'utf-8')
+          let match
+          while ((match = re.exec(text))) icons.add('i-' + match[1])
+        } catch { /* skip */ }
+      }
+    }
+  }
+
+  walk(docsDir)
+  return [...icons]
+}`
+
 // ---------------------------------------------------------------------------
 // Write .vitepress/config.mts + theme files
 // ---------------------------------------------------------------------------
@@ -248,6 +279,7 @@ function buildThemeIndexContent(versions?: DocusiteVersions, versionsLatestLink?
   const imports: string[] = [
     `import DefaultTheme from 'vitepress/theme'`,
     `import ReactMark from './components/ReactMark.vue'`,
+    `import 'uno.css'`,
   ]
   const components: string[] = [
     `app.component('ReactMark', ReactMark)`,
@@ -313,6 +345,7 @@ function serializeConfig(config: UserConfig<DefaultTheme.Config>): string {
   // Check if llms markers exist anywhere in the config
   const hasLlms = checkHasLlmsMarker(config)
   const hasLlmsDev = checkHasLlmsDevMarker(config)
+  const hasUnocss = checkHasUnocssMarker(config)
   const hasContentInjections = checkHasContentInjectionsMarker(config)
   const hasSourceLinks = checkHasSourceLinksMarker(config)
 
@@ -320,6 +353,15 @@ function serializeConfig(config: UserConfig<DefaultTheme.Config>): string {
   const imports: string[] = []
   if (hasLlms) {
     imports.push(`import llmstxt from '${llmsPluginDir.replace(/'/g, "\\'")}'`)
+  }
+  if (hasUnocss) {
+    imports.push(`import Unocss from '${unocssVitePath.replace(/'/g, "\\'")}'`)
+    imports.push(`import { presetUno, presetIcons } from '${unocssMainPath.replace(/'/g, "\\'")}'`)
+    imports.push(`import logos from '${iconifyLogosPath.replace(/'/g, "\\'")}' with { type: 'json' }`)
+    if (!hasLlmsDev) {
+      imports.push(`import { readFileSync, readdirSync } from 'node:fs'`)
+      imports.push(`import { join } from 'node:path'`)
+    }
   }
 
   // Serialize the config object recursively
@@ -348,6 +390,12 @@ function serializeConfig(config: UserConfig<DefaultTheme.Config>): string {
   // Inline the source links plugin helper
   if (hasSourceLinks) {
     parts.push(SOURCE_LINKS_PLUGIN_CODE)
+    parts.push('')
+  }
+
+  // Inline the UnoCSS icon scanner helper
+  if (hasUnocss) {
+    parts.push(UNOCSS_ICON_SCAN_CODE)
     parts.push('')
   }
 
@@ -385,6 +433,20 @@ function checkHasLlmsDevMarker(obj: unknown): boolean {
   if (obj && typeof obj === 'object') {
     if ((obj as any).__docusite_llms_dev) return true
     return Object.values(obj as Record<string, unknown>).some(checkHasLlmsDevMarker)
+  }
+  return false
+}
+
+/** Recursively check if any plugin array contains our UnoCSS marker */
+function checkHasUnocssMarker(obj: unknown): boolean {
+  if (Array.isArray(obj)) {
+    return obj.some(item =>
+      (item as any)?.__docusite_unocss || checkHasUnocssMarker(item),
+    )
+  }
+  if (obj && typeof obj === 'object') {
+    if ((obj as any).__docusite_unocss) return true
+    return Object.values(obj as Record<string, unknown>).some(checkHasUnocssMarker)
   }
   return false
 }
@@ -457,6 +519,11 @@ function serializeArray(arr: unknown[], indent: number): string {
       const docsDir = (item as any).__docusite_llms_dev_docsDir as string
       return `${INDENT.repeat(indent + 1)}__docusite_llms_dev_plugin(${JSON.stringify(docsDir)})`
     }
+    // Handle UnoCSS icons plugin marker
+    if (item && typeof item === 'object' && (item as any).__docusite_unocss) {
+      const docsDir = (item as any).__docusite_unocss_docsDir as string
+      return `${INDENT.repeat(indent + 1)}Unocss({ presets: [presetUno(), presetIcons({ scale: 1.2, collections: { logos: async () => logos } })], safelist: __docusite_scan_icon_classes(${JSON.stringify(docsDir)}) })`
+    }
     // Handle content injections marker
     if (item && typeof item === 'object' && (item as any).__docusite_content_injections) {
       const data = (item as any).__docusite_content_injections_data as DocusiteContentInjection[]
@@ -497,16 +564,18 @@ function serializeObject(obj: Record<string, unknown>, indent: number): string {
 
 function ensureGitignore(docsDir: string): void {
   const gitignorePath = resolve(docsDir, '.gitignore')
-  const entry = '.vitepress/'
+  const entries = ['.vitepress/', 'changelog.md']
 
   let content = ''
   if (existsSync(gitignorePath)) {
     content = readFileSync(gitignorePath, 'utf-8')
-    if (content.split('\n').some(line => line.trim() === entry)) {
-      return
-    }
+    const existing = new Set(content.split('\n').map(line => line.trim()))
+    const missing = entries.filter(entry => !existing.has(entry))
+    if (missing.length === 0) return
     if (!content.endsWith('\n')) content += '\n'
+    writeFileSync(gitignorePath, content + missing.join('\n') + '\n', 'utf-8')
+    return
   }
 
-  writeFileSync(gitignorePath, content + entry + '\n', 'utf-8')
+  writeFileSync(gitignorePath, entries.join('\n') + '\n', 'utf-8')
 }
