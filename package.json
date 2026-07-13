@@ -18,7 +18,10 @@
   ],
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch"
+    "dev": "tsup --watch",
+    "docs:dev": "./bin/cli.mjs dev",
+    "docs:build": "./bin/cli.mjs build",
+    "docs:preview": "./bin/cli.mjs preview"
   },
   "keywords": [
     "documentation",
