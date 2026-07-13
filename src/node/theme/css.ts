@@ -14,7 +14,7 @@
  *   soft/dark/dimm      = derived from the first color
  */
 
-import type { DocusiteColors } from '../../shared/types.js'
+import type { DocusiteColors } from '../../shared/types.js';
 
 // ---------------------------------------------------------------------------
 // Color math helpers
@@ -122,6 +122,28 @@ export function generateBaseCSS(): string {
   return `
 /* ── Navbar ── */
 .VPNav { box-shadow: none !important; border-bottom: none !important; }
+
+.VPNavBar {
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+:root {
+  --vp-nav-bg-color: #ffffff00;
+}
+html.dark {
+  --vp-nav-bg-color: #11111100;
+}
+
+@media (min-width: 960px) {
+  .Layout .VPNavBar.has-sidebar .title {
+    background: var(--vp-sidebar-bg-color);
+  }
+}
+
+.VPNavBar.has-sidebar .divider {
+  display: none;
+}
 
 /* ── Home hero: animated gradient name ── */
 :root {

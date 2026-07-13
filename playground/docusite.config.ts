@@ -53,6 +53,10 @@ export default defineConfig({
     older: [
       { label: 'v1.x.x', link: '/v1/introduction/getting-started' },
     ],
+    oldVersionBanner: {
+      message: 'message',
+      show: true,
+    }
   },
   socialLinks: [
     { icon: 'github', link: 'https://github.com/user/docusite' },
@@ -61,4 +65,7 @@ export default defineConfig({
     { key: 'version', value: { major: 2, minor: 0, full: '2.0.0' } },
     { key: 'api', value: { baseUrl: 'https://api.example.com' } },
   ],
+  sourceLinks: {
+    target: 'https://github.com/user/docusite/tree/master/src',
+  },
 })

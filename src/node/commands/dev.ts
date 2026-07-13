@@ -1,21 +1,69 @@
 import { resolve } from 'node:path'
+import { watch, existsSync } from 'node:fs'
 import { loadConfig } from '../config/load.js'
 import { transformConfig } from '../config/transform.js'
 import { writeVitePressConfig } from '../vitepress/write-config.js'
+
+const CONFIG_FILES = [
+  'docusite.config.ts',
+  'docusite.config.mts',
+  'docusite.config.js',
+  'docusite.config.mjs',
+]
+
+function findConfigFile(cwd: string): string | undefined {
+  for (const file of CONFIG_FILES) {
+    const fullPath = resolve(cwd, file)
+    if (existsSync(fullPath)) return fullPath
+  }
+  return undefined
+}
 
 export async function dev(root?: string, port?: number) {
   const cwd = process.cwd()
   const config = await loadConfig(cwd)
   const docsDir = resolve(cwd, config.docsDir ?? './docs')
 
-  const { config: vpConfig, versions, changelogSrc, contentInjections, runtimeScriptCode } = transformConfig(config, docsDir)
-  writeVitePressConfig(docsDir, vpConfig, { versions, changelogSrc, contentInjections, runtimeScriptCode })
-
-  const { createServer } = await import('vitepress')
-  const server = await createServer(docsDir, {
-    port,
+  // Generate initial VitePress config
+  const result = transformConfig(config, docsDir)
+  writeVitePressConfig(docsDir, result.config, {
+    versions: result.versions,
+    versionsLatestLink: result.versionsLatestLink,
+    changelogSrc: result.changelogSrc,
+    contentInjections: result.contentInjections,
+    runtimeScriptCode: result.runtimeScriptCode,
   })
 
+  // Start VitePress dev server
+  const { createServer } = await import('vitepress')
+  const server = await createServer(docsDir, { port })
   await server.listen()
   server.printUrls()
+
+  // Watch docusite.config.ts for changes → regenerate .vitepress/config.mts
+  // VitePress auto-detects changes to config.mts and hot-reloads
+  const configFile = findConfigFile(cwd)
+  if (configFile) {
+    let debounceTimer: ReturnType<typeof setTimeout> | undefined
+
+    watch(configFile, () => {
+      if (debounceTimer) clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(async () => {
+        try {
+          const newConfig = await loadConfig(cwd)
+          const newDocsDir = resolve(cwd, newConfig.docsDir ?? './docs')
+          const newResult = transformConfig(newConfig, newDocsDir)
+          writeVitePressConfig(newDocsDir, newResult.config, {
+            versions: newResult.versions,
+            versionsLatestLink: newResult.versionsLatestLink,
+            changelogSrc: newResult.changelogSrc,
+            contentInjections: newResult.contentInjections,
+            runtimeScriptCode: newResult.runtimeScriptCode,
+          })
+        } catch (e: any) {
+          console.error(`[docusite] Config reload failed: ${e.message}`)
+        }
+      }, 300)
+    })
+  }
 }

@@ -44,7 +44,7 @@ export default defineConfig({
           { text: 'Changelog', link: '/guide/changelog' },
           { text: 'Подстановка контента', link: '/guide/content-injections' },
           { text: 'Клиентские скрипты', link: '/guide/runtime-scripts' },
-          { text: '<ReactMark />', link: '/guide/react-mark' },
+          { text: '<ReactMark /> ReactMark', link: '/guide/react-mark' },
           { text: 'Интернационализация', link: '/guide/i18n' },
           { text: 'Пользовательский CSS', link: '/guide/custom-css' },
           { text: 'Прямой доступ к VitePress', link: '/guide/escape-hatches' },

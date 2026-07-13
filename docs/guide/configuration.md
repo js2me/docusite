@@ -39,7 +39,7 @@ Docusite ищет конфигурацию в следующем порядке:
 | `head` | `HeadConfig[]` | — | Дополнительные теги `<head>` |
 | `socialLinks` | `SocialLink[]` | — | Ссылки на соцсети |
 | `customCss` | `string[]` | — | Пользовательские CSS-файлы ([подробнее](/guide/custom-css)) |
-| `contentInjections` | `DocusiteContentInjection[]` | — | Шаблонные переменные ([подробнее](/guide/content-injections)) |
+| `contentInjections` | `DocusiteContentInjection[]` | `packageJson` из `package.json` | Шаблонные переменные ([подробнее](/guide/content-injections)) |
 | `runtimeScript` | `() => void` | — | Клиентский скрипт ([подробнее](/guide/runtime-scripts)) |
 | `themeConfigOverrides` | `Partial<DefaultTheme.Config>` | — | Переопределения темы VitePress ([подробнее](/guide/escape-hatches)) |
 | `siteConfigOverrides` | `Record<string, unknown>` | — | Переопределения конфигурации сайта VitePress ([подробнее](/guide/escape-hatches)) |

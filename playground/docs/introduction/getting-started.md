@@ -33,3 +33,6 @@ export default defineConfig({
 ```
 
 4. Write markdown in `./docs/` and run `pnpm docs:dev`.
+
+5. It has by default package json source @\{packageJson.name} - @{packageJson.name}
+

@@ -65,7 +65,8 @@ interface DocusiteConfig {
   /** Пользовательские CSS-файлы */
   customCss?: string[]
 
-  /** Шаблонные переменные для markdown — используйте @{key.path} для подстановки */
+  /** Шаблонные переменные для markdown — используйте @{key.path} для подстановки.
+   *  Встроенная переменная `packageJson` подставляется автоматически из package.json проекта. */
   contentInjections?: DocusiteContentInjection[]
 
   /** Клиентский скрипт — выполняется только в браузере (не при SSR) */
@@ -183,6 +184,8 @@ interface DocusiteContentInjection {
   value: unknown
 }
 ```
+
+Встроенная переменная `packageJson` добавляется автоматически из `package.json` проекта. Пользовательские `contentInjections` с тем же `key` переопределяют встроенные.
 
 ## Импорт типов
 

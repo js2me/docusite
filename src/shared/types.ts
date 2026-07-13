@@ -87,6 +87,13 @@ export interface DocusiteVersions {
   latest: string
   /** Older versions */
   older?: DocusiteVersion[]
+  /** Show a warning banner on old version pages */
+  oldVersionBanner?: {
+    /** Enable the banner (default: `true` when `older` versions exist) */
+    show?: boolean
+    /** Custom message. Use `{latestLink}` and `{latestLabel}` as placeholders. */
+    message?: string
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -98,6 +105,20 @@ export interface DocusiteChangelog {
   src: string
   /** Custom nav link path (default: `'/changelog'`) */
   link?: string
+}
+
+// ---------------------------------------------------------------------------
+// Source links (rewrite markdown links to GitHub source)
+// ---------------------------------------------------------------------------
+
+export interface DocusiteSourceLinks {
+  /**
+   * Path prefix in markdown links to replace, e.g. `'/src'`.
+   * Matches `(/from/...)` in `.md` files (default: `'/src'`).
+   */
+  from?: string
+  /** Target URL prefix, e.g. `'https://github.com/user/repo/tree/master/src'` */
+  target: string
 }
 
 // ---------------------------------------------------------------------------
@@ -158,7 +179,12 @@ export interface DocusiteConfig {
   /** Custom CSS file paths to inject */
   customCss?: string[]
 
-  /** Template variables for .md files — use `@{key.path}` in markdown to inject values */
+  /** Rewrite markdown links from a local path prefix to a GitHub (or other) source URL.
+   *  e.g. `(/src/foo.ts)` → `(https://github.com/user/repo/tree/master/src/foo.ts)` */
+  sourceLinks?: DocusiteSourceLinks
+
+  /** Template variables for .md files — use `@{key.path}` in markdown to inject values.
+   *  Built-in: `packageJson` is auto-injected from the project's package.json. */
   contentInjections?: DocusiteContentInjection[]
 
   /** Client-side runtime script — called only in the browser (not during SSR).

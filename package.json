@@ -19,6 +19,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "docs:playground": "pnpm i && cd playground && pnpm docs:dev",
     "docs:dev": "./bin/cli.mjs dev",
     "docs:build": "./bin/cli.mjs build",
     "docs:preview": "./bin/cli.mjs preview"

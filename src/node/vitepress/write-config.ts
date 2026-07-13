@@ -2,7 +2,7 @@ import { mkdirSync, existsSync, readFileSync, writeFileSync, copyFileSync } from
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { UserConfig, DefaultTheme } from 'vitepress'
-import type { DocusiteLlmsOptions, DocusiteContentInjection, DocusiteVersions } from '../../shared/types.js'
+import type { DocusiteLlmsOptions, DocusiteContentInjection, DocusiteSourceLinks, DocusiteVersions } from '../../shared/types.js'
 
 // Resolve the real path to vitepress-plugin-llms from within docusite's installation
 const llmsPluginDir = dirname(
@@ -117,6 +117,21 @@ function __docusite_llms_dev_plugin(docsDir) {
 // Inline content injections plugin (served in generated config.mts)
 // ---------------------------------------------------------------------------
 
+const SOURCE_LINKS_PLUGIN_CODE = `function __docusite_source_links_plugin(options) {
+  const from = options.from || '/src'
+  const target = options.target.replace(/\\/$/, '')
+  const escapedFrom = from.replace(/[.*+?^$\\{}()|[\\]\\\\]/g, '\\\\$&')
+  const re = new RegExp('(\\\\(' + escapedFrom + '\\\\/)', 'g')
+  return {
+    name: 'docusite:source-links',
+    enforce: 'pre',
+    transform(content, id) {
+      if (!id.endsWith('.md')) return null
+      return content.replace(re, '(' + target + '/')
+    },
+  }
+}`
+
 const CONTENT_INJECTIONS_PLUGIN_CODE = `function __docusite_content_injections_plugin(injections) {
   const map = {}
   for (const inj of injections) map[inj.key] = inj.value
@@ -145,6 +160,7 @@ const CONTENT_INJECTIONS_PLUGIN_CODE = `function __docusite_content_injections_p
 
 export interface WriteOptions {
   versions?: DocusiteVersions
+  versionsLatestLink?: string
   changelogSrc?: string
   contentInjections?: DocusiteContentInjection[]
   runtimeScriptCode?: string
@@ -169,7 +185,7 @@ export function writeVitePressConfig(
   writeFileSync(configPath, content, 'utf-8')
 
   // Always write theme files (ReactMark + optional NavVersionsFlyout)
-  writeThemeFiles(vpxDir, options.versions, options.runtimeScriptCode)
+  writeThemeFiles(vpxDir, options.versions, options.versionsLatestLink, options.runtimeScriptCode)
 
   // Copy changelog source file into docs dir
   if (options.changelogSrc) {
@@ -190,7 +206,7 @@ export function writeVitePressConfig(
 // Theme files (ReactMark + optional NavVersionsFlyout)
 // ---------------------------------------------------------------------------
 
-function writeThemeFiles(vpxDir: string, versions?: DocusiteVersions, runtimeScriptCode?: string): void {
+function writeThemeFiles(vpxDir: string, versions?: DocusiteVersions, versionsLatestLink?: string, runtimeScriptCode?: string): void {
   const themeDir = resolve(vpxDir, 'theme')
   const componentsDir = resolve(themeDir, 'components')
   mkdirSync(componentsDir, { recursive: true })
@@ -204,23 +220,31 @@ function writeThemeFiles(vpxDir: string, versions?: DocusiteVersions, runtimeScr
     console.warn(`[docusite] ReactMark.vue not found at ${srcReactMark}`)
   }
 
-  // Copy NavVersionsFlyout.vue only when versioning is enabled
+  // Copy NavVersionsFlyout.vue + OldVersionBanner.vue when versioning is enabled
   if (versions) {
-    const srcComponent = resolve(docusiteDistDir, 'node/theme/components/NavVersionsFlyout.vue')
-    const dstComponent = resolve(componentsDir, 'NavVersionsFlyout.vue')
-    if (existsSync(srcComponent)) {
-      copyFileSync(srcComponent, dstComponent)
+    const srcFlyout = resolve(docusiteDistDir, 'node/theme/components/NavVersionsFlyout.vue')
+    const dstFlyout = resolve(componentsDir, 'NavVersionsFlyout.vue')
+    if (existsSync(srcFlyout)) {
+      copyFileSync(srcFlyout, dstFlyout)
     } else {
-      console.warn(`[docusite] NavVersionsFlyout.vue not found at ${srcComponent}`)
+      console.warn(`[docusite] NavVersionsFlyout.vue not found at ${srcFlyout}`)
+    }
+
+    const srcBanner = resolve(docusiteDistDir, 'node/theme/components/OldVersionBanner.vue')
+    const dstBanner = resolve(componentsDir, 'OldVersionBanner.vue')
+    if (existsSync(srcBanner)) {
+      copyFileSync(srcBanner, dstBanner)
+    } else {
+      console.warn(`[docusite] OldVersionBanner.vue not found at ${srcBanner}`)
     }
   }
 
   // Write theme/index.ts with the required component registrations
   const themeIndex = resolve(themeDir, 'index.ts')
-  writeFileSync(themeIndex, buildThemeIndexContent(versions, runtimeScriptCode), 'utf-8')
+  writeFileSync(themeIndex, buildThemeIndexContent(versions, versionsLatestLink, runtimeScriptCode), 'utf-8')
 }
 
-function buildThemeIndexContent(versions?: DocusiteVersions, runtimeScriptCode?: string): string {
+function buildThemeIndexContent(versions?: DocusiteVersions, versionsLatestLink?: string, runtimeScriptCode?: string): string {
   const imports: string[] = [
     `import DefaultTheme from 'vitepress/theme'`,
     `import ReactMark from './components/ReactMark.vue'`,
@@ -231,7 +255,9 @@ function buildThemeIndexContent(versions?: DocusiteVersions, runtimeScriptCode?:
 
   if (versions) {
     imports.push(`import NavVersionsFlyout from './components/NavVersionsFlyout.vue'`)
+    imports.push(`import OldVersionBanner from './components/OldVersionBanner.vue'`)
     components.push(`app.component('NavVersionsFlyout', NavVersionsFlyout)`)
+    components.push(`app.component('OldVersionBanner', OldVersionBanner)`)
   }
 
   imports.push(`import type { Theme } from 'vitepress'`)
@@ -258,12 +284,23 @@ function buildThemeIndexContent(versions?: DocusiteVersions, runtimeScriptCode?:
     : ''
 
   return `${imports.join('\n')}
+${versions ? `import { h } from 'vue'` : ''}
 
 export default {
   extends: DefaultTheme,
   enhanceApp({ app }) {
     ${enhanceAppBody}${runtimeBlock}
-  },
+  },${versions ? `
+  Layout() {
+    return h(DefaultTheme.Layout, null, {
+      'doc-before': () => h(OldVersionBanner, {
+        latestLabel: ${JSON.stringify(versions.latest.startsWith('v') ? versions.latest : `v${versions.latest}`)},
+        latestLink: ${JSON.stringify(versionsLatestLink || '/')},
+        olderVersions: ${JSON.stringify(versions.older ?? [])},
+        message: ${JSON.stringify(versions.oldVersionBanner?.message || '')},
+      }),
+    })
+  },` : ''}
 } satisfies Theme
 `
 }
@@ -277,6 +314,7 @@ function serializeConfig(config: UserConfig<DefaultTheme.Config>): string {
   const hasLlms = checkHasLlmsMarker(config)
   const hasLlmsDev = checkHasLlmsDevMarker(config)
   const hasContentInjections = checkHasContentInjectionsMarker(config)
+  const hasSourceLinks = checkHasSourceLinksMarker(config)
 
   // Build imports
   const imports: string[] = []
@@ -304,6 +342,12 @@ function serializeConfig(config: UserConfig<DefaultTheme.Config>): string {
   // Inline the content injections plugin helper
   if (hasContentInjections) {
     parts.push(CONTENT_INJECTIONS_PLUGIN_CODE)
+    parts.push('')
+  }
+
+  // Inline the source links plugin helper
+  if (hasSourceLinks) {
+    parts.push(SOURCE_LINKS_PLUGIN_CODE)
     parts.push('')
   }
 
@@ -359,6 +403,20 @@ function checkHasContentInjectionsMarker(obj: unknown): boolean {
   return false
 }
 
+/** Recursively check if any plugin array contains our source links marker */
+function checkHasSourceLinksMarker(obj: unknown): boolean {
+  if (Array.isArray(obj)) {
+    return obj.some(item =>
+      (item as any)?.__docusite_source_links || checkHasSourceLinksMarker(item),
+    )
+  }
+  if (obj && typeof obj === 'object') {
+    if ((obj as any).__docusite_source_links) return true
+    return Object.values(obj as Record<string, unknown>).some(checkHasSourceLinksMarker)
+  }
+  return false
+}
+
 // ---------------------------------------------------------------------------
 // Recursive serializer
 // ---------------------------------------------------------------------------
@@ -403,6 +461,11 @@ function serializeArray(arr: unknown[], indent: number): string {
     if (item && typeof item === 'object' && (item as any).__docusite_content_injections) {
       const data = (item as any).__docusite_content_injections_data as DocusiteContentInjection[]
       return `${INDENT.repeat(indent + 1)}__docusite_content_injections_plugin(${serializeValue(data, indent + 2)})`
+    }
+    // Handle source links marker
+    if (item && typeof item === 'object' && (item as any).__docusite_source_links) {
+      const options = (item as any).__docusite_source_links_options as DocusiteSourceLinks
+      return `${INDENT.repeat(indent + 1)}__docusite_source_links_plugin(${serializeValue(options, indent + 2)})`
     }
     const val = serializeValue(item, indent + 1)
     return `${INDENT.repeat(indent + 1)}${val}`

@@ -1,5 +1,6 @@
 import type { UserConfig, DefaultTheme } from 'vitepress'
 import type { DocusiteConfig, DocusiteContentInjection, DocusiteLocale, DocusiteSearch, DocusiteVersions } from '../../shared/types.js'
+import { prepareContentInjections } from './content-injections.js'
 import { generateBrandCSS, generateBaseCSS } from '../theme/css.js'
 
 // ---------------------------------------------------------------------------
@@ -57,13 +58,15 @@ function transformSidebarGroups(groups: DefaultTheme.SidebarItem[]): void {
 export interface TransformResult {
   config: UserConfig<DefaultTheme.Config>
   versions?: DocusiteVersions
+  versionsLatestLink?: string
   changelogSrc?: string
   contentInjections?: DocusiteContentInjection[]
   runtimeScriptCode?: string
 }
 
-export function transformConfig(config: DocusiteConfig, docsDir: string): TransformResult {
+export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = process.cwd()): TransformResult {
   const vpConfig: UserConfig<DefaultTheme.Config> = {}
+  const contentInjections = prepareContentInjections(config.contentInjections, cwd)
 
   // -- Site-level config --
   if (config.title) vpConfig.title = config.title
@@ -83,6 +86,11 @@ export function transformConfig(config: DocusiteConfig, docsDir: string): Transf
     transformSidebar(themeConfig.sidebar)
   }
   if (config.socialLinks) themeConfig.socialLinks = config.socialLinks
+
+  // Include h1–h5 in the "On this page" outline (VitePress default is h2 only)
+  themeConfig.outline = {
+    level: [1, 5],
+  }
 
   // -- Colors → CSS injection --
   vpConfig.head ??= []
@@ -165,10 +173,17 @@ export function transformConfig(config: DocusiteConfig, docsDir: string): Transf
   }
 
   // -- Content injections → add Vite transform plugin marker --
-  if (config.contentInjections?.length) {
+  if (contentInjections?.length) {
     vpConfig.vite = vpConfig.vite ?? {}
     vpConfig.vite.plugins = vpConfig.vite.plugins ?? []
-    vpConfig.vite.plugins.push({ __docusite_content_injections: true, __docusite_content_injections_data: config.contentInjections } as any)
+    vpConfig.vite.plugins.push({ __docusite_content_injections: true, __docusite_content_injections_data: contentInjections } as any)
+  }
+
+  // -- Source links → rewrite (/src/...) markdown links to GitHub URLs --
+  if (config.sourceLinks) {
+    vpConfig.vite = vpConfig.vite ?? {}
+    vpConfig.vite.plugins = vpConfig.vite.plugins ?? []
+    vpConfig.vite.plugins.push({ __docusite_source_links: true, __docusite_source_links_options: config.sourceLinks } as any)
   }
 
   // -- Theme config overrides (applied last, take priority) --
@@ -186,8 +201,9 @@ export function transformConfig(config: DocusiteConfig, docsDir: string): Transf
   return {
     config: vpConfig,
     versions: config.versions,
+    versionsLatestLink: config.versions ? (findFirstLink(config.sidebar) || '/') : undefined,
     changelogSrc,
-    contentInjections: config.contentInjections,
+    contentInjections,
     runtimeScriptCode: config.runtimeScript?.toString(),
   }
 }
