@@ -155,6 +155,23 @@ html.dark {
   display: none;
 }
 
+.VPNavBar.home .divider {
+  display: none;
+}
+
+.VPNavBar.home.top {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media (max-width: 767px) {
+  .VPNavBar.screen-open {
+    background-color: var(--vp-c-bg) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
 /* ── Home hero: animated gradient name ── */
 :root {
   --vp-home-hero-name-color: transparent;
