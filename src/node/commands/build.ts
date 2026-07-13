@@ -8,8 +8,8 @@ export async function build(root?: string) {
   const config = await loadConfig(cwd)
   const docsDir = resolve(cwd, config.docsDir ?? './docs')
 
-  const vpConfig = transformConfig(config, docsDir)
-  writeVitePressConfig(docsDir, vpConfig)
+  const { config: vpConfig, versions, changelogSrc, contentInjections, runtimeScriptCode } = transformConfig(config, docsDir)
+  writeVitePressConfig(docsDir, vpConfig, { versions, changelogSrc, contentInjections, runtimeScriptCode })
 
   const { build } = await import('vitepress')
   await build(docsDir)

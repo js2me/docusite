@@ -1,38 +1,64 @@
-import { defineConfig } from 'docusite'
+import { defineConfig } from 'docusite';
 
 export default defineConfig({
   title: 'Docusite Playground',
   description: 'Test playground for docusite',
   colors: {
-    light: '#646cff',
-    dark: '#535bf2',
+    light: ['#646cff', '#ff6466', '#21ffc7'],
+    dark: ['#535bf2', '#ff6466', '#21ffc7'],
   },
   nav: [
-    { text: 'Guide', link: '/guide/' },
-    { text: 'API', link: '/api/' },
+    { text: 'Guide', link: '/introduction/getting-started' },
+    { text: 'API', link: '/api/overview' },
   ],
+  runtimeScript: () => {
+    console.log('runtime script!');
+  },
   sidebar: {
-    '/guide/': [
+    '/v1/': [
       {
-        text: 'Guide',
+        text: 'Introduction',
         items: [
-          { text: 'Introduction', link: '/guide/intro' },
-          { text: 'Getting Started', link: '/guide/getting-started' },
+          { text: 'Getting Started', link: '/v1/introduction/getting-started' },
+        ],
+      },
+      {
+        text: 'API Reference',
+        items: [
+          { text: 'Overview', link: '/v1/api/overview' },
         ],
       },
     ],
-    '/api/': [
+    '/': [
+      {
+        text: 'Introduction',
+        items: [
+          { text: 'Getting Started', link: '/introduction/getting-started' },
+        ],
+      },
       {
         text: 'API Reference',
         items: [
           { text: 'Overview', link: '/api/overview' },
+          { text: '<ReactMark /> Hooks', link: '/api/react-hooks' },
         ],
       },
     ],
   },
+  changelog: { src: 'CHANGELOG.md' },
   search: 'local',
   llms: true,
+  versions: {
+    latest: '2.0.0',
+    older: [
+      { label: 'v1.x.x', link: '/v1/introduction/getting-started' },
+    ],
+  },
   socialLinks: [
     { icon: 'github', link: 'https://github.com/user/docusite' },
+  ],
+  contentInjections: [
+    { key: 'version', value: { major: 2, minor: 0, full: '2.0.0' } },
+    { key: 'api', value: { baseUrl: 'https://api.example.com' } },
   ],
 })

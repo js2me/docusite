@@ -1,37 +1,271 @@
-import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, existsSync, readFileSync, writeFileSync, copyFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { UserConfig, DefaultTheme } from 'vitepress'
-import type { DocusiteLlmsOptions } from '../../shared/types.js'
+import type { DocusiteLlmsOptions, DocusiteContentInjection, DocusiteVersions } from '../../shared/types.js'
 
 // Resolve the real path to vitepress-plugin-llms from within docusite's installation
-// This ensures it works even when pnpm doesn't hoist the package to the user's node_modules
 const llmsPluginDir = dirname(
   fileURLToPath(import.meta.resolve('vitepress-plugin-llms')),
 )
 
+/**
+ * Find docusite's dist directory by resolving from the CLI bundle.
+ * Since tsup bundles everything into dist/node/cli.js,
+ * import.meta.url here points to dist/node/cli.js.
+ * So dist dir = dirname(import.meta.url) -> dist/node -> dist
+ */
+function findDocusiteDistDir(): string {
+  const thisFile = fileURLToPath(import.meta.url)
+  // thisFile = .../dist/node/cli.js (or .../dist/node/vitepress/write-config.js if not bundled)
+  // We need to find the "dist" directory
+  const dir = dirname(thisFile)
+  // If bundled into cli.js: dir = dist/node → dist = dirname(dir)
+  // If separate file: dir = dist/node/vitepress → dist = dirname(dirname(dir))
+  // Check which case by looking for dist/node structure
+  if (existsSync(resolve(dir, 'cli.js')) || dir.endsWith('/node') || dir.endsWith('\\node')) {
+    // We're in dist/node/ (bundled into cli.js)
+    return dirname(dir)
+  }
+  // We're in dist/node/vitepress/ (separate file)
+  return dirname(dirname(dir))
+}
+
+const docusiteDistDir = findDocusiteDistDir()
+
 // ---------------------------------------------------------------------------
-// Write .vitepress/config.mts
+// Inline llms dev plugin (served in generated config.mts)
 // ---------------------------------------------------------------------------
+
+const LLMS_DEV_PLUGIN_CODE = `import { readFileSync, readdirSync } from 'node:fs'
+import { join, relative } from 'node:path'
+
+function __docusite_llms_dev_plugin(docsDir) {
+  return {
+    name: 'docusite:llms-dev',
+    configureServer(server) {
+      function parseFrontmatter(raw) {
+        const data = {}
+        let content = raw
+        if (raw.startsWith('---')) {
+          const end = raw.indexOf('---', 3)
+          if (end !== -1) {
+            const yaml = raw.slice(3, end)
+            content = raw.slice(end + 3).trim()
+            for (const line of yaml.split('\\n')) {
+              const m = line.match(/^(\\w[\\w-]*)\\s*:\\s*(.+)/)
+              if (m) data[m[1]] = m[2].trim().replace(/^['"]|['"]$/g, '')
+            }
+          }
+        }
+        return { data, content }
+      }
+
+      function collectMdFiles(dir, baseDir) {
+        const files = []
+        let entries
+        try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return files }
+        for (const entry of entries) {
+          if (entry.name.startsWith('.') || entry.name === 'node_modules') continue
+          const fullPath = join(dir, entry.name)
+          if (entry.isDirectory()) {
+            files.push(...collectMdFiles(fullPath, baseDir))
+          } else if (entry.isFile() && entry.name.endsWith('.md')) {
+            try {
+              const raw = readFileSync(fullPath, 'utf-8')
+              const { data: fm, content } = parseFrontmatter(raw)
+              files.push({
+                relativePath: '/' + relative(baseDir, fullPath).replace(/\\\\/g, '/'),
+                content: content.trim(),
+                title: fm.title || '',
+                description: fm.description || '',
+              })
+            } catch { /* skip */ }
+          }
+        }
+        return files
+      }
+
+      server.middlewares.use((req, res, next) => {
+        const url = req.url || ''
+        if (url === '/llms-full.txt' || url === '/llms.txt') {
+          try {
+            const files = collectMdFiles(docsDir, docsDir)
+            let result
+            if (url === '/llms-full.txt') {
+              result = files.map(f => '# ' + f.relativePath + '\\n\\n' + f.content).join('\\n\\n---\\n\\n') + '\\n'
+            } else {
+              const lines = files.map(f => {
+                const name = f.title || f.relativePath.replace(/\\.md$/, '').replace(/^\\//, '')
+                const desc = f.description ? ': ' + f.description : ''
+                return '- [' + name + '](' + f.relativePath + ')' + desc
+              })
+              result = '# Documentation\\n\\n' + lines.join('\\n') + '\\n'
+            }
+            res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+            res.end(result)
+            return
+          } catch { /* fall through */ }
+        }
+        next()
+      })
+    },
+  }
+}`
+
+// ---------------------------------------------------------------------------
+// Inline content injections plugin (served in generated config.mts)
+// ---------------------------------------------------------------------------
+
+const CONTENT_INJECTIONS_PLUGIN_CODE = `function __docusite_content_injections_plugin(injections) {
+  const map = {}
+  for (const inj of injections) map[inj.key] = inj.value
+  return {
+    name: 'docusite:content-injections',
+    enforce: 'pre',
+    transform(content, id) {
+      if (!id.endsWith('.md')) return null
+      return content.replace(/@\\{([a-zA-Z_$][a-zA-Z0-9_$.]*)\\}/g, (_, path) => {
+        const parts = path.split('.')
+        let val = map[parts[0]]
+        for (let i = 1; i < parts.length && val != null; i++) {
+          val = val[parts[i]]
+        }
+        if (val == null) return ''
+        if (typeof val === 'object') return JSON.stringify(val).replace(/\\{/g, '&#123;').replace(/\\}/g, '&#125;')
+        return String(val)
+      })
+    },
+  }
+}`
+
+// ---------------------------------------------------------------------------
+// Write .vitepress/config.mts + theme files
+// ---------------------------------------------------------------------------
+
+export interface WriteOptions {
+  versions?: DocusiteVersions
+  changelogSrc?: string
+  contentInjections?: DocusiteContentInjection[]
+  runtimeScriptCode?: string
+}
 
 /**
  * Write the transformed VitePress config to disk as a valid `.vitepress/config.mts`.
- * Also ensures `.vitepress/` is in the docs directory's `.gitignore`.
+ * Also writes custom theme files (always) and copies changelog source if configured.
+ * Ensures `.vitepress/` is in the docs directory's `.gitignore`.
  */
 export function writeVitePressConfig(
   docsDir: string,
   config: UserConfig<DefaultTheme.Config>,
+  options: WriteOptions = {},
 ): void {
   const vpxDir = resolve(docsDir, '.vitepress')
   mkdirSync(vpxDir, { recursive: true })
 
+  // Write config
   const configPath = resolve(vpxDir, 'config.mts')
   const content = serializeConfig(config)
-
   writeFileSync(configPath, content, 'utf-8')
+
+  // Always write theme files (ReactMark + optional NavVersionsFlyout)
+  writeThemeFiles(vpxDir, options.versions, options.runtimeScriptCode)
+
+  // Copy changelog source file into docs dir
+  if (options.changelogSrc) {
+    const srcPath = resolve(process.cwd(), options.changelogSrc)
+    const dstPath = resolve(docsDir, 'changelog.md')
+    if (existsSync(srcPath)) {
+      copyFileSync(srcPath, dstPath)
+    } else {
+      console.warn(`[docusite] Changelog source not found: ${srcPath}`)
+    }
+  }
 
   // Ensure .vitepress/ is gitignored
   ensureGitignore(docsDir)
+}
+
+// ---------------------------------------------------------------------------
+// Theme files (ReactMark + optional NavVersionsFlyout)
+// ---------------------------------------------------------------------------
+
+function writeThemeFiles(vpxDir: string, versions?: DocusiteVersions, runtimeScriptCode?: string): void {
+  const themeDir = resolve(vpxDir, 'theme')
+  const componentsDir = resolve(themeDir, 'components')
+  mkdirSync(componentsDir, { recursive: true })
+
+  // Always copy ReactMark.vue
+  const srcReactMark = resolve(docusiteDistDir, 'node/theme/components/ReactMark.vue')
+  const dstReactMark = resolve(componentsDir, 'ReactMark.vue')
+  if (existsSync(srcReactMark)) {
+    copyFileSync(srcReactMark, dstReactMark)
+  } else {
+    console.warn(`[docusite] ReactMark.vue not found at ${srcReactMark}`)
+  }
+
+  // Copy NavVersionsFlyout.vue only when versioning is enabled
+  if (versions) {
+    const srcComponent = resolve(docusiteDistDir, 'node/theme/components/NavVersionsFlyout.vue')
+    const dstComponent = resolve(componentsDir, 'NavVersionsFlyout.vue')
+    if (existsSync(srcComponent)) {
+      copyFileSync(srcComponent, dstComponent)
+    } else {
+      console.warn(`[docusite] NavVersionsFlyout.vue not found at ${srcComponent}`)
+    }
+  }
+
+  // Write theme/index.ts with the required component registrations
+  const themeIndex = resolve(themeDir, 'index.ts')
+  writeFileSync(themeIndex, buildThemeIndexContent(versions, runtimeScriptCode), 'utf-8')
+}
+
+function buildThemeIndexContent(versions?: DocusiteVersions, runtimeScriptCode?: string): string {
+  const imports: string[] = [
+    `import DefaultTheme from 'vitepress/theme'`,
+    `import ReactMark from './components/ReactMark.vue'`,
+  ]
+  const components: string[] = [
+    `app.component('ReactMark', ReactMark)`,
+  ]
+
+  if (versions) {
+    imports.push(`import NavVersionsFlyout from './components/NavVersionsFlyout.vue'`)
+    components.push(`app.component('NavVersionsFlyout', NavVersionsFlyout)`)
+  }
+
+  imports.push(`import type { Theme } from 'vitepress'`)
+
+  // Extract function body from the serialized arrow function
+  // e.g. "() => { void import(...).then(...) }" → "void import(...).then(...)"
+  let runtimeBody = ''
+  if (runtimeScriptCode) {
+    const bodyMatch = runtimeScriptCode.match(/^\s*\(?[^=>]*\)?\s*=>\s*\{([\s\S]*)\}\s*$/)
+    if (bodyMatch) {
+      runtimeBody = bodyMatch[1]!.trim()
+    } else {
+      // Expression-body arrow: () => expr
+      const exprMatch = runtimeScriptCode.match(/^\s*\(?[^=>]*\)?\s*=>\s*(.+)\s*$/)
+      if (exprMatch) {
+        runtimeBody = exprMatch[1]!.trim()
+      }
+    }
+  }
+
+  const enhanceAppBody = components.join('\n    ')
+  const runtimeBlock = runtimeBody
+    ? `\n\n    if (!import.meta.env.SSR) {\n      ${runtimeBody}\n    }`
+    : ''
+
+  return `${imports.join('\n')}
+
+export default {
+  extends: DefaultTheme,
+  enhanceApp({ app }) {
+    ${enhanceAppBody}${runtimeBlock}
+  },
+} satisfies Theme
+`
 }
 
 // ---------------------------------------------------------------------------
@@ -39,13 +273,14 @@ export function writeVitePressConfig(
 // ---------------------------------------------------------------------------
 
 function serializeConfig(config: UserConfig<DefaultTheme.Config>): string {
-  // Check if llms marker exists anywhere in the config
+  // Check if llms markers exist anywhere in the config
   const hasLlms = checkHasLlmsMarker(config)
+  const hasLlmsDev = checkHasLlmsDevMarker(config)
+  const hasContentInjections = checkHasContentInjectionsMarker(config)
 
   // Build imports
   const imports: string[] = []
   if (hasLlms) {
-    // Use the resolved absolute path so pnpm strict mode can find it
     imports.push(`import llmstxt from '${llmsPluginDir.replace(/'/g, "\\'")}'`)
   }
 
@@ -57,6 +292,18 @@ function serializeConfig(config: UserConfig<DefaultTheme.Config>): string {
 
   if (imports.length > 0) {
     parts.push(imports.join('\n'))
+    parts.push('')
+  }
+
+  // Inline the llms dev plugin helper
+  if (hasLlmsDev) {
+    parts.push(LLMS_DEV_PLUGIN_CODE)
+    parts.push('')
+  }
+
+  // Inline the content injections plugin helper
+  if (hasContentInjections) {
+    parts.push(CONTENT_INJECTIONS_PLUGIN_CODE)
     parts.push('')
   }
 
@@ -80,6 +327,34 @@ function checkHasLlmsMarker(obj: unknown): boolean {
   if (obj && typeof obj === 'object') {
     if ((obj as any).__docusite_llms) return true
     return Object.values(obj as Record<string, unknown>).some(checkHasLlmsMarker)
+  }
+  return false
+}
+
+/** Recursively check if any plugin array contains our llms dev marker */
+function checkHasLlmsDevMarker(obj: unknown): boolean {
+  if (Array.isArray(obj)) {
+    return obj.some(item =>
+      (item as any)?.__docusite_llms_dev || checkHasLlmsDevMarker(item),
+    )
+  }
+  if (obj && typeof obj === 'object') {
+    if ((obj as any).__docusite_llms_dev) return true
+    return Object.values(obj as Record<string, unknown>).some(checkHasLlmsDevMarker)
+  }
+  return false
+}
+
+/** Recursively check if any plugin array contains our content injections marker */
+function checkHasContentInjectionsMarker(obj: unknown): boolean {
+  if (Array.isArray(obj)) {
+    return obj.some(item =>
+      (item as any)?.__docusite_content_injections || checkHasContentInjectionsMarker(item),
+    )
+  }
+  if (obj && typeof obj === 'object') {
+    if ((obj as any).__docusite_content_injections) return true
+    return Object.values(obj as Record<string, unknown>).some(checkHasContentInjectionsMarker)
   }
   return false
 }
@@ -117,8 +392,17 @@ function serializeArray(arr: unknown[], indent: number): string {
     }
     // Handle custom CSS marker
     if (item && typeof item === 'object' && (item as any).__docusite_custom_css) {
-      // Skip — custom CSS files are not Vite plugins, handled elsewhere
       return null
+    }
+    // Handle llms dev plugin marker
+    if (item && typeof item === 'object' && (item as any).__docusite_llms_dev) {
+      const docsDir = (item as any).__docusite_llms_dev_docsDir as string
+      return `${INDENT.repeat(indent + 1)}__docusite_llms_dev_plugin(${JSON.stringify(docsDir)})`
+    }
+    // Handle content injections marker
+    if (item && typeof item === 'object' && (item as any).__docusite_content_injections) {
+      const data = (item as any).__docusite_content_injections_data as DocusiteContentInjection[]
+      return `${INDENT.repeat(indent + 1)}__docusite_content_injections_plugin(${serializeValue(data, indent + 2)})`
     }
     const val = serializeValue(item, indent + 1)
     return `${INDENT.repeat(indent + 1)}${val}`
@@ -156,9 +440,8 @@ function ensureGitignore(docsDir: string): void {
   if (existsSync(gitignorePath)) {
     content = readFileSync(gitignorePath, 'utf-8')
     if (content.split('\n').some(line => line.trim() === entry)) {
-      return // already present
+      return
     }
-    // Ensure trailing newline
     if (!content.endsWith('\n')) content += '\n'
   }
 

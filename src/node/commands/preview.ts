@@ -8,8 +8,8 @@ export async function preview(root?: string, port?: number) {
   const config = await loadConfig(cwd)
   const docsDir = resolve(cwd, config.docsDir ?? './docs')
 
-  const vpConfig = transformConfig(config, docsDir)
-  writeVitePressConfig(docsDir, vpConfig)
+  const { config: vpConfig, versions, changelogSrc, contentInjections, runtimeScriptCode } = transformConfig(config, docsDir)
+  writeVitePressConfig(docsDir, vpConfig, { versions, changelogSrc, contentInjections, runtimeScriptCode })
 
   const { serve } = await import('vitepress')
   await serve({ root: docsDir, port })

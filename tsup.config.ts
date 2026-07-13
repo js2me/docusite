@@ -20,4 +20,13 @@ export default defineConfig([
     dts: true,
     clean: false,
   },
+  // Copy Vue components as-is (not compiled by tsup)
+  {
+    entry: ['src/node/theme/components/NavVersionsFlyout.vue', 'src/node/theme/components/ReactMark.vue'],
+    outDir: 'dist/node/theme/components',
+    loader: {
+      '.vue': 'copy',
+    },
+    clean: false,
+  },
 ])

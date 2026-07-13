@@ -5,10 +5,20 @@ import type { DefaultTheme, HeadConfig } from 'vitepress'
 // ---------------------------------------------------------------------------
 
 export interface DocusiteColors {
-  /** Brand color for light theme, e.g. `'#646cff'` */
-  light?: string
-  /** Brand color for dark theme, e.g. `'#535bf2'` */
-  dark?: string
+  /**
+   * Brand color(s) for light theme.
+   * A single hex for a monochrome palette, or 3 colors for gradient animation.
+   * @example `'#646cff'`
+   * @example `['#646cff', '#ff6466', '#21ffc7']`
+   */
+  light?: string | [string, string, string]
+  /**
+   * Brand color(s) for dark theme.
+   * A single hex for a monochrome palette, or 3 colors for gradient animation.
+   * @example `'#535bf2'`
+   * @example `['#535bf2', '#ff6466', '#21ffc7']`
+   */
+  dark?: string | [string, string, string]
 }
 
 // ---------------------------------------------------------------------------
@@ -62,6 +72,46 @@ export interface DocusiteLlmsOptions {
 }
 
 // ---------------------------------------------------------------------------
+// Versioning
+// ---------------------------------------------------------------------------
+
+export interface DocusiteVersion {
+  /** Display label, e.g. `'v6.x.x'` */
+  label: string
+  /** Link to the version's entry page, e.g. `'/v6/introduction/getting-started'` */
+  link: string
+}
+
+export interface DocusiteVersions {
+  /** Current (latest) version label, e.g. `'7.2.1'` or `'v3.0.0'` */
+  latest: string
+  /** Older versions */
+  older?: DocusiteVersion[]
+}
+
+// ---------------------------------------------------------------------------
+// Changelog
+// ---------------------------------------------------------------------------
+
+export interface DocusiteChangelog {
+  /** Path to the CHANGELOG.md source file (relative to project root), e.g. `'../CHANGELOG.md'` */
+  src: string
+  /** Custom nav link path (default: `'/changelog'`) */
+  link?: string
+}
+
+// ---------------------------------------------------------------------------
+// Content injections (template variables for .md files)
+// ---------------------------------------------------------------------------
+
+export interface DocusiteContentInjection {
+  /** Variable name, e.g. `'version'` or `'api'` — referenced as `@{key}` or `@{key.path}` in .md */
+  key: string
+  /** Any JSON-serializable value — string, number, boolean, object, or array */
+  value: unknown
+}
+
+// ---------------------------------------------------------------------------
 // Main config
 // ---------------------------------------------------------------------------
 
@@ -87,6 +137,12 @@ export interface DocusiteConfig {
   /** i18n locales */
   locales?: Record<string, DocusiteLocale>
 
+  /** Version selector — adds a NavVersionsFlyout to the navbar */
+  versions?: DocusiteVersions
+
+  /** Show CHANGELOG link in the navbar. `true` = default, `false` = hidden, `string` = custom link, `{ src }` = copy file from path */
+  changelog?: boolean | string | DocusiteChangelog
+
   /** Search provider (default: `'local'`) */
   search?: DocusiteSearch
 
@@ -101,6 +157,21 @@ export interface DocusiteConfig {
 
   /** Custom CSS file paths to inject */
   customCss?: string[]
+
+  /** Template variables for .md files — use `@{key.path}` in markdown to inject values */
+  contentInjections?: DocusiteContentInjection[]
+
+  /** Client-side runtime script — called only in the browser (not during SSR).
+   * The function body is inlined into the generated theme's `enhanceApp()`.
+   * Dynamic imports inside are resolved relative to `docs/.vitepress/theme/`.
+   * @example
+   * ```ts
+   * runtimeScript: () => {
+   *   void import('my-devtools').then((m) => m.loadDevtools())
+   * }
+   * ```
+   */
+  runtimeScript?: () => void
 
   /** Raw VitePress theme config overrides (merged last) */
   themeConfigOverrides?: Partial<DefaultTheme.Config>
@@ -123,6 +194,7 @@ export interface DocusiteConfig {
  * export default defineConfig({
  *   title: 'My Project',
  *   colors: { light: '#646cff', dark: '#535bf2' },
+ *   colors: { light: ['#646cff', '#ff6466', '#21ffc7'], dark: ['#535bf2', '#ff6466', '#21ffc7'] },
  * })
  * ```
  */
