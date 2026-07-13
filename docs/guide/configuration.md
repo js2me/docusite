@@ -25,6 +25,7 @@ Docusite ищет конфигурацию в следующем порядке:
 | Опция | Тип | По умолчанию | Описание |
 |---|---|---|---|
 | `docsDir` | `string` | `'./docs'` | Путь к директории с документацией |
+| `base` | `string` | `'/'` | Базовый URL развёртывания (VitePress `base`) — для деплоя в подкаталог, например `'/bar/'` |
 | `title` | `string` | — | Заголовок сайта |
 | `description` | `string` | — | Описание сайта |
 | `logo` | `string` | — | Путь к логотипу |
@@ -32,7 +33,6 @@ Docusite ищет конфигурацию в следующем порядке:
 | `nav` | `NavItem[]` | — | Навигация в шапке сайта |
 | `sidebar` | `Sidebar` | — | Боковое меню |
 | `locales` | `Record<string, DocusiteLocale>` | — | Локали для i18n ([подробнее](/guide/i18n)) |
-| `versions` | `DocusiteVersions` | — | Селектор версий ([подробнее](/guide/versioned-docs)) |
 | `changelog` | `boolean \| string \| DocusiteChangelog` | — | Ссылка на changelog ([подробнее](/guide/changelog)) |
 | `search` | `DocusiteSearch` | `'local'` | Поиск ([подробнее](/guide/search)) |
 | `llms` | `boolean \| DocusiteLlmsOptions` | `true` | Генерация llms.txt ([подробнее](/guide/llms)) |
@@ -83,7 +83,7 @@ export default defineConfig({
   },
   nav: [
     { text: 'Руководство', link: '/introduction/getting-started' },
-    { text: 'API', link: '/api/overview' },
+    { text: 'API', link: '/api/define-config' },
   ],
   sidebar: {
     '/': [
@@ -99,12 +99,6 @@ export default defineConfig({
           { text: 'Конфигурация', link: '/guide/configuration' },
         ],
       },
-    ],
-  },
-  versions: {
-    latest: '2.0.0',
-    older: [
-      { label: 'v1.x.x', link: '/v1/introduction/getting-started' },
     ],
   },
   changelog: { src: '../CHANGELOG.md' },

@@ -38,7 +38,7 @@ export default defineConfig({
   llms: {
     llmsTxt: true,           // генерировать llms.txt (по умолчанию: true)
     llmsFullTxt: true,       // генерировать llms-full.txt (по умолчанию: true)
-    ignoreFiles: ['v1/**'],  // глоб-шаблоны для исключения файлов
+    ignoreFiles: ['**/drafts/**'],  // глоб-шаблоны для исключения файлов
     ignoreFrontmatter: true, // убирать frontmatter из вывода (по умолчанию: true)
     description: 'Документация My Project',  // описание для llms.txt
   },

@@ -58,9 +58,7 @@ export default defineConfig({
       show: true,
     }
   },
-  socialLinks: [
-    { icon: 'github', link: 'https://github.com/user/docusite' },
-  ],
+  github: 'https://github.com/user/docusite',
   contentInjections: [
     { key: 'version', value: { major: 2, minor: 0, full: '2.0.0' } },
     { key: 'api', value: { baseUrl: 'https://api.example.com' } },

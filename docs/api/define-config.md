@@ -26,6 +26,9 @@ interface DocusiteConfig {
   /** Путь к директории с документацией (по умолчанию: './docs') */
   docsDir?: string
 
+  /** Базовый URL развёртывания (VitePress `base`, по умолчанию: '/') */
+  base?: string
+
   /** Заголовок сайта */
   title?: string
   /** Описание сайта */
@@ -43,9 +46,6 @@ interface DocusiteConfig {
 
   /** Локали для i18n */
   locales?: Record<string, DocusiteLocale>
-
-  /** Селектор версий — добавляет NavVersionsFlyout в навигацию */
-  versions?: DocusiteVersions
 
   /** Ссылка на CHANGELOG в навигации. true = по умолчанию, false = скрыть, string = кастомная ссылка, { src } = копировать файл */
   changelog?: boolean | string | DocusiteChangelog
@@ -145,24 +145,6 @@ interface DocusiteLlmsOptions {
 }
 ```
 
-### DocusiteVersions
-
-```ts
-interface DocusiteVersions {
-  /** Метка текущей версии, например '7.2.1' или 'v3.0.0' */
-  latest: string
-  /** Старые версии */
-  older?: DocusiteVersion[]
-}
-
-interface DocusiteVersion {
-  /** Отображаемая метка, например 'v6.x.x' */
-  label: string
-  /** Ссылка на стартовую страницу версии */
-  link: string
-}
-```
-
 ### DocusiteChangelog
 
 ```ts
@@ -192,5 +174,5 @@ interface DocusiteContentInjection {
 Для использования типов в TypeScript:
 
 ```ts
-import type { DocusiteConfig, DocusiteColors, DocusiteVersions } from 'docusite'
+import type { DocusiteConfig, DocusiteColors } from 'docusite'
 ```

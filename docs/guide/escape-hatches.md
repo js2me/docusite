@@ -52,6 +52,7 @@ export default defineConfig({
 | Нужен footer | `themeConfigOverrides.footer` |
 | Настроить оглавление | `themeConfigOverrides.outline` |
 | Переопределить текст навигации | `themeConfigOverrides.docFooter` |
+| Задать базовый URL развёртывания | `base` (или `siteConfigOverrides.base`) |
 | Включить чистые URL | `siteConfigOverrides.cleanUrls` |
 | Настроить sitemap | `siteConfigOverrides.sitemap` |
 | Включить дату обновления | `siteConfigOverrides.lastUpdated` |

@@ -135,6 +135,16 @@ html.dark {
   --vp-nav-bg-color: #11111100;
 }
 
+.VPSidebar {
+  scrollbar-width: thin;
+}
+
+.Layout .aside-container {
+  max-width: 480px;
+  width: auto;
+  min-width: 224px;
+}
+
 @media (min-width: 960px) {
   .Layout .VPNavBar.has-sidebar .title {
     background: var(--vp-sidebar-bg-color);

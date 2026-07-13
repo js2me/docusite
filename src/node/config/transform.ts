@@ -69,6 +69,7 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
   const contentInjections = prepareContentInjections(config.contentInjections, cwd)
 
   // -- Site-level config --
+  if (config.base) vpConfig.base = config.base
   if (config.title) vpConfig.title = config.title
   if (config.description) vpConfig.description = config.description
   if (config.head) vpConfig.head = [...config.head]
@@ -85,7 +86,8 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
     themeConfig.sidebar = config.sidebar
     transformSidebar(themeConfig.sidebar)
   }
-  if (config.socialLinks) themeConfig.socialLinks = config.socialLinks
+  const socialLinks = resolveSocialLinks(config)
+  if (socialLinks) themeConfig.socialLinks = socialLinks
 
   // Include h1–h5 in the "On this page" outline (VitePress default is h2 only)
   themeConfig.outline = {
@@ -211,6 +213,20 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+function resolveSocialLinks(config: DocusiteConfig): DefaultTheme.SocialLink[] | undefined {
+  const links: DefaultTheme.SocialLink[] = []
+
+  if (config.socialLinks) {
+    links.push(...config.socialLinks.filter((link) => link.icon !== 'github'))
+  }
+
+  if (config.github) {
+    links.push({ icon: 'github', link: config.github })
+  }
+
+  return links.length > 0 ? links : undefined
+}
 
 /** Find the first item link from the sidebar config to use as latest version link */
 function findFirstLink(sidebar?: DefaultTheme.Sidebar): string | undefined {

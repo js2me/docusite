@@ -96,4 +96,3 @@ pnpm docs:build
 
 - [Конфигурация](/guide/configuration) — полный список опций `docusite.config.ts`
 - [Фирменные цвета](/guide/brand-colors) — настройка цветов и CSS
-- [Версионирование](/guide/versioned-docs) — поддержка нескольких версий документации

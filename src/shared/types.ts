@@ -140,6 +140,13 @@ export interface DocusiteConfig {
   /** Path to docs directory (default: `'./docs'`) */
   docsDir?: string
 
+  /**
+   * Base URL the site will be deployed at (VitePress `base`).
+   * Set when deploying under a sub path, e.g. `'/bar/'` for `https://foo.github.io/bar/`.
+   * Must start and end with a slash (default: `'/'`).
+   */
+  base?: string
+
   /** Site title */
   title?: string
   /** Site description */
@@ -173,7 +180,10 @@ export interface DocusiteConfig {
   /** Additional `<head>` tags */
   head?: HeadConfig[]
 
-  /** Social links in nav */
+  /** GitHub repository URL — adds a GitHub icon button to the navbar when set */
+  github?: string
+
+  /** Social links in nav (other than GitHub — use `github` for the GitHub button) */
   socialLinks?: DefaultTheme.SocialLink[]
 
   /** Custom CSS file paths to inject */
