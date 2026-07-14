@@ -34,6 +34,7 @@ export default defineConfig({
         text: 'Introduction',
         items: [
           { text: 'Getting Started', link: '/introduction/getting-started' },
+          { text: 'Markdown Examples', link: '/introduction/markdown-examples' },
         ],
       },
       {
