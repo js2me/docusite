@@ -1,6 +1,7 @@
 import { defineConfig } from 'docusite'
 
 export default defineConfig({
+  base: '/docusite',
   title: 'Docusite',
   description: 'Простой инструмент для документации на базе VitePress',
   colors: {
