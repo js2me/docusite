@@ -8,6 +8,8 @@ export interface DocusiteColors {
   /**
    * Brand color(s) for light theme.
    * A single hex for a monochrome palette, or 3 colors for gradient animation.
+   * Interactive elements always use the first color; hover/active are lightened from it.
+   * With 3 colors, the full tuple drives the home hero gradient only.
    * @example `'#646cff'`
    * @example `['#646cff', '#ff6466', '#21ffc7']`
    */
@@ -15,6 +17,8 @@ export interface DocusiteColors {
   /**
    * Brand color(s) for dark theme.
    * A single hex for a monochrome palette, or 3 colors for gradient animation.
+   * Interactive elements always use the first color; hover/active are lightened from it.
+   * With 3 colors, the full tuple drives the home hero gradient only.
    * @example `'#535bf2'`
    * @example `['#535bf2', '#ff6466', '#21ffc7']`
    */

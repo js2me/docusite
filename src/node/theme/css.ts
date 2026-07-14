@@ -1,17 +1,16 @@
 /**
  * Auto-generate VitePress brand CSS variables from hex color(s).
  *
- * Single color:
- *   --vp-c-brand-1     = base color
- *   --vp-c-brand-2     = lighten 10%
- *   --vp-c-brand-3     = lighten 20%
- *   --vp-c-brand-soft  = base @ 14% opacity
- *   --vp-c-brand-dark  = darken 10%
- *   --vp-c-brand-dimm  = base @ 8% opacity
+ * Interactive palette (always from the primary color):
+ *   --vp-c-brand-1              = base color
+ *   --vp-c-brand-2              = lighten 10%  (hover)
+ *   --vp-c-brand-3              = lighten 20%  (active)
+ *   --vp-button-brand-*-bg      = remapped so buttons brighten on hover/active
+ *   --vp-c-brand-soft/dark/dimm = derived from the base color
  *
- * 3-color tuple [c1, c2, c3]:
- *   --vp-c-brand-1/2/3 = provided colors directly (for gradient animation)
- *   soft/dark/dimm      = derived from the first color
+ * Gradient (hero title / logo glow):
+ *   single color  → same as brand-1/2/3
+ *   3-color tuple → --docusite-c-gradient-1/2/3 = the provided colors
  */
 
 import type { DocusiteColors } from '../../shared/types.js';
@@ -73,40 +72,56 @@ interface BrandVars {
   '--vp-c-brand-soft': string
   '--vp-c-brand-dark': string
   '--vp-c-brand-dimm': string
+  '--vp-button-brand-bg': string
+  '--vp-button-brand-hover-bg': string
+  '--vp-button-brand-active-bg': string
+  '--docusite-c-gradient-1': string
+  '--docusite-c-gradient-2': string
+  '--docusite-c-gradient-3': string
 }
 
 function generateVars(
   hex: string | [string, string, string],
 ): BrandVars {
-  if (Array.isArray(hex)) {
-    // 3 brand colors provided — use them directly, derive soft/dark/dimm from the first
-    const c0 = parseHex(hex[0])
-    const c1 = parseHex(hex[1])
-    const c2 = parseHex(hex[2])
-    const d10 = darken(c0.r, c0.g, c0.b, 0.10)
-    return {
-      '--vp-c-brand-1': toHex(c0.r, c0.g, c0.b),
-      '--vp-c-brand-2': toHex(c1.r, c1.g, c1.b),
-      '--vp-c-brand-3': toHex(c2.r, c2.g, c2.b),
-      '--vp-c-brand-soft': toRgbaString(c0.r, c0.g, c0.b, 0.14),
-      '--vp-c-brand-dark': toHex(d10.r, d10.g, d10.b),
-      '--vp-c-brand-dimm': toRgbaString(c0.r, c0.g, c0.b, 0.08),
-    }
-  }
-
-  // Single color — derive brand-2/3 by lightening
-  const { r, g, b } = parseHex(hex)
+  // Interactive states always derive from the primary color (color[0] for tuples)
+  const primary = Array.isArray(hex) ? hex[0] : hex
+  const { r, g, b } = parseHex(primary)
   const l10 = lighten(r, g, b, 0.10)
   const l20 = lighten(r, g, b, 0.20)
   const d10 = darken(r, g, b, 0.10)
 
+  const brand1 = toHex(r, g, b)
+  const brand2 = toHex(l10.r, l10.g, l10.b)
+  const brand3 = toHex(l20.r, l20.g, l20.b)
+
+  // Gradient colors: use the 3-tuple as-is, or fall back to the interactive scale
+  let gradient1 = brand1
+  let gradient2 = brand2
+  let gradient3 = brand3
+  if (Array.isArray(hex)) {
+    const c0 = parseHex(hex[0])
+    const c1 = parseHex(hex[1])
+    const c2 = parseHex(hex[2])
+    gradient1 = toHex(c0.r, c0.g, c0.b)
+    gradient2 = toHex(c1.r, c1.g, c1.b)
+    gradient3 = toHex(c2.r, c2.g, c2.b)
+  }
+
   return {
-    '--vp-c-brand-1': toHex(r, g, b),
-    '--vp-c-brand-2': toHex(l10.r, l10.g, l10.b),
-    '--vp-c-brand-3': toHex(l20.r, l20.g, l20.b),
+    '--vp-c-brand-1': brand1,
+    '--vp-c-brand-2': brand2,
+    '--vp-c-brand-3': brand3,
     '--vp-c-brand-soft': toRgbaString(r, g, b, 0.14),
     '--vp-c-brand-dark': toHex(d10.r, d10.g, d10.b),
     '--vp-c-brand-dimm': toRgbaString(r, g, b, 0.08),
+    // VitePress defaults map button bg→brand-3, hover→brand-2, active→brand-1
+    // (which darkens on hover). Remap so interactive states brighten instead.
+    '--vp-button-brand-bg': brand1,
+    '--vp-button-brand-hover-bg': brand2,
+    '--vp-button-brand-active-bg': brand3,
+    '--docusite-c-gradient-1': gradient1,
+    '--docusite-c-gradient-2': gradient2,
+    '--docusite-c-gradient-3': gradient3,
   }
 }
 
@@ -174,17 +189,20 @@ html.dark {
 
 /* ── Home hero: animated gradient name ── */
 :root {
+  --docusite-c-gradient-1: var(--vp-c-brand-1);
+  --docusite-c-gradient-2: var(--vp-c-brand-2);
+  --docusite-c-gradient-3: var(--vp-c-brand-3);
   --vp-home-hero-name-color: transparent;
-  --vp-home-hero-name-background: -webkit-linear-gradient(120deg, var(--vp-c-brand-1), var(--vp-c-brand-2), var(--vp-c-brand-3));
+  --vp-home-hero-name-background: -webkit-linear-gradient(120deg, var(--docusite-c-gradient-1), var(--docusite-c-gradient-2), var(--docusite-c-gradient-3));
 }
 
 #VPContent span.name.clip {
-  text-shadow: 30px 30px 256px var(--vp-c-brand-2), -30px -30px 256px var(--vp-c-brand-1);
+  text-shadow: 30px 30px 256px var(--docusite-c-gradient-2), -30px -30px 256px var(--docusite-c-gradient-1);
 }
 
 /* ── Home hero: animated logo background ── */
 :root {
-  --vp-home-hero-image-background-image: linear-gradient(-45deg, var(--vp-c-brand-1) 33%, var(--vp-c-brand-2) 33% 66%, var(--vp-c-brand-3) 66%);
+  --vp-home-hero-image-background-image: linear-gradient(-45deg, var(--docusite-c-gradient-1) 33%, var(--docusite-c-gradient-2) 33% 66%, var(--docusite-c-gradient-3) 66%);
   --vp-home-hero-image-filter: blur(44px);
 }
 @media (min-width: 640px) {
@@ -221,7 +239,7 @@ html.dark {
 
 /* ── Home hero: brand button glow ── */
 #VPContent .VPButton.medium.brand {
-  box-shadow: 30px 30px 128px var(--vp-c-brand-2), -30px -30px 128px var(--vp-c-brand-1);
+  box-shadow: 30px 30px 128px var(--docusite-c-gradient-2), -30px -30px 128px var(--docusite-c-gradient-1);
 }
 
 /* ── Feature cards: glassmorphism ── */
