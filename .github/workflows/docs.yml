@@ -37,7 +37,10 @@ jobs:
       - name: Install deps
         run: pnpm i
 
-      - name: Building Docs!
+      - name: Build project
+        run: pnpm build
+
+      - name: Build docs
         run: pnpm docs:build
 
       - run: touch docs/.vitepress/dist/.nojekyll
