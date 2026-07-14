@@ -16,7 +16,10 @@ import { defineConfig } from 'docusite'
 export default defineConfig({
   title: 'My Project',
   description: 'Awesome project docs',
-  logo: '/logo.svg',
+  logos: {
+    main: '/public/logo.svg',
+    hero: '/public/logo.svg',
+  },
   colors: {
     light: '#646cff',
     dark: '#535bf2',
@@ -78,9 +81,20 @@ Path to the docs directory (default: `'./docs'`).
 
 Site title and description. Used in HTML `<head>` and the default theme.
 
-### `logo`
+### `logos`
 
-Path to the logo image (relative to the docs public directory).
+Site logos — paths relative to the docs directory, including `public/`
+(file `docs/public/logo.svg` → `'/public/logo.svg'`):
+
+```ts
+logos: {
+  main: '/public/logo.svg', // navbar, next to the site title
+  hero: '/public/logo.svg', // home page hero image
+}
+```
+
+- `main` — logo in the navbar next to the site title  
+- `hero` — hero image on pages with `layout: home` (injected into frontmatter; falls back to `main` if omitted)
 
 ### `colors`
 

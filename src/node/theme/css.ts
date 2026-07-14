@@ -138,9 +138,15 @@ export function generateBaseCSS(): string {
 /* ── Navbar ── */
 .VPNav { box-shadow: none !important; border-bottom: none !important; }
 
-.VPNavBar {
+/* Blur content only — full-bar backdrop softens the sidebar edge. */
+.VPNavBar .content-body {
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
+}
+
+/* Logo left of site title; VitePress default gap is 8px */
+.VPNavBarTitle a.title .logo {
+  margin-right: 8px;
 }
 
 :root {
@@ -154,18 +160,64 @@ html.dark {
   scrollbar-width: thin;
 }
 
+.Layout .title {
+  transition: background-color 0s;
+}
+
 .Layout .aside-container {
   max-width: 480px;
   width: auto;
   min-width: 224px;
 }
 
+/* VitePress 1.x: VPNavBar.has-sidebar appears only after hydration → search CLS.
+   Bridge SSR-only state; once .has-sidebar lands, leave layout to VitePress.
+   See https://github.com/vuejs/vitepress/issues/4351 */
 @media (min-width: 960px) {
+  .Layout:has(#VPContent.has-sidebar) .VPNavBar:not(.has-sidebar) .wrapper {
+    padding: 0;
+  }
+
+  .Layout:has(#VPContent.has-sidebar) .VPNavBar:not(.has-sidebar) .container {
+    max-width: 100%;
+  }
+
+  .Layout:has(#VPContent.has-sidebar) .VPNavBar:not(.has-sidebar) .title {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    padding: 0 32px;
+    width: var(--vp-sidebar-width);
+    height: var(--vp-nav-height);
+    background: var(--vp-sidebar-bg-color);
+  }
+
+  .Layout:has(#VPContent.has-sidebar) .VPNavBar:not(.has-sidebar) .content {
+    position: relative;
+    z-index: 1;
+    padding-left: var(--vp-sidebar-width);
+    padding-right: 32px;
+  }
+
   .Layout .VPNavBar.has-sidebar .title {
     background: var(--vp-sidebar-bg-color);
   }
 }
 
+@media (min-width: 1440px) {
+  .Layout:has(#VPContent.has-sidebar) .VPNavBar:not(.has-sidebar) .title {
+    padding-left: max(32px, calc((100% - (var(--vp-layout-max-width) - 64px)) / 2));
+    width: calc((100% - (var(--vp-layout-max-width) - 64px)) / 2 + var(--vp-sidebar-width) - 32px);
+  }
+
+  .Layout:has(#VPContent.has-sidebar) .VPNavBar:not(.has-sidebar) .content {
+    padding-left: calc((100vw - var(--vp-layout-max-width)) / 2 + var(--vp-sidebar-width));
+    padding-right: calc((100vw - var(--vp-layout-max-width)) / 2 + 32px);
+  }
+}
+
+.Layout:has(#VPContent.has-sidebar) .VPNavBar:not(.has-sidebar) .divider,
 .VPNavBar.has-sidebar .divider {
   display: none;
 }
@@ -174,7 +226,7 @@ html.dark {
   display: none;
 }
 
-.VPNavBar.home.top {
+.VPNavBar.home.top .content-body {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
@@ -182,6 +234,9 @@ html.dark {
 @media (max-width: 767px) {
   .VPNavBar.screen-open {
     background-color: var(--vp-c-bg) !important;
+  }
+
+  .VPNavBar.screen-open .content-body {
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
   }

@@ -28,7 +28,7 @@ Docusite ищет конфигурацию в следующем порядке:
 | `base` | `string` | `'/'` | Базовый URL развёртывания (VitePress `base`) — для деплоя в подкаталог, например `'/bar/'` |
 | `title` | `string` | — | Заголовок сайта |
 | `description` | `string` | — | Описание сайта |
-| `logo` | `string` | — | Путь к логотипу |
+| `logos` | `{ main?: string; hero?: string }` | — | Логотипы (`/public/...` относительно docs): `main` — в шапке, `hero` — на главной (если не указан — берётся `main`) |
 | `colors` | `DocusiteColors` | — | Фирменные цвета ([подробнее](/guide/brand-colors)) |
 | `nav` | `NavItem[]` | — | Навигация в шапке сайта |
 | `sidebar` | `Sidebar` | — | Боковое меню |
@@ -76,7 +76,10 @@ import { defineConfig } from 'docusite'
 export default defineConfig({
   title: 'My Project',
   description: 'Документация моего проекта',
-  logo: '/logo.svg',
+  logos: {
+    main: '/public/logo.svg',
+    hero: '/public/logo.svg',
+  },
   colors: {
     light: ['#646cff', '#ff6466', '#21ffc7'],
     dark: ['#535bf2', '#ff6466', '#21ffc7'],

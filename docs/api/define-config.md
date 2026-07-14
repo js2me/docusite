@@ -33,8 +33,14 @@ interface DocusiteConfig {
   title?: string
   /** Описание сайта */
   description?: string
-  /** Путь к логотипу */
-  logo?: string
+  /** Логотипы сайта — путь относительно docs, с `public/`
+   *  (файл `docs/public/logo.svg` → `'/public/logo.svg'`).
+   *  `main` — в шапке слева от названия;
+   *  `hero` — на главной (`layout: home`); если не указан — берётся `main` */
+  logos?: {
+    main?: string
+    hero?: string
+  }
 
   /** Фирменные цвета — автогенерация CSS-переменных VitePress */
   colors?: DocusiteColors

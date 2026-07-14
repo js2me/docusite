@@ -5,8 +5,6 @@ hero:
   name: Docusite
   text: Documentation Made Simple
   tagline: Write markdown, get a beautiful docs site
-  image:
-    src: /logo.svg
   actions:
     - theme: brand
       text: Get Started

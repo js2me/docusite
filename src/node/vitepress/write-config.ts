@@ -166,6 +166,32 @@ const CONTENT_INJECTIONS_PLUGIN_CODE = `function __docusite_content_injections_p
   }
 }`
 
+const LOGOS_HERO_PLUGIN_CODE = `function __docusite_logos_hero_plugin(src) {
+  return {
+    name: 'docusite:logos-hero',
+    enforce: 'pre',
+    transform(content, id) {
+      if (!id.endsWith('.md')) return null
+      const match = content.match(/^---\\r?\\n([\\s\\S]*?)\\r?\\n---/)
+      if (!match) return null
+      const fm = match[1]
+      if (!/^layout:\\s*home\\s*$/m.test(fm)) return null
+      if (!/^hero:\\s*$/m.test(fm)) return null
+
+      let newFm = fm
+      if (/^(\\s*)image:\\s*\\n\\1\\s+src:\\s*.+$/m.test(newFm)) {
+        newFm = newFm.replace(/^(\\s*image:\\s*\\n\\s+src:\\s*).+$/m, '$1' + src)
+      } else if (/^(\\s*)image:\\s+\\S+/m.test(newFm)) {
+        newFm = newFm.replace(/^(\\s*image:\\s+)\\S+/m, '$1' + src)
+      } else {
+        newFm = newFm.replace(/^(hero:\\s*)$/m, '$1\\n  image:\\n    src: ' + src)
+      }
+
+      return content.slice(0, match.index) + '---\\n' + newFm + '\\n---' + content.slice(match.index + match[0].length)
+    },
+  }
+}`
+
 const UNOCSS_ICON_SCAN_CODE = `function __docusite_scan_icon_classes(docsDir) {
   const icons = new Set()
   const re = /\\bi-([a-z0-9-]+:[a-z0-9-]+)\\b/gi
@@ -355,6 +381,7 @@ function serializeConfig(config: UserConfig<DefaultTheme.Config>): string {
   const hasUnocss = checkHasUnocssMarker(config)
   const hasContentInjections = checkHasContentInjectionsMarker(config)
   const hasSourceLinks = checkHasSourceLinksMarker(config)
+  const hasLogosHero = checkHasLogosHeroMarker(config)
 
   // Build imports
   const imports: string[] = []
@@ -397,6 +424,12 @@ function serializeConfig(config: UserConfig<DefaultTheme.Config>): string {
   // Inline the source links plugin helper
   if (hasSourceLinks) {
     parts.push(SOURCE_LINKS_PLUGIN_CODE)
+    parts.push('')
+  }
+
+  // Inline the logos.hero plugin helper
+  if (hasLogosHero) {
+    parts.push(LOGOS_HERO_PLUGIN_CODE)
     parts.push('')
   }
 
@@ -486,6 +519,20 @@ function checkHasSourceLinksMarker(obj: unknown): boolean {
   return false
 }
 
+/** Recursively check if any plugin array contains our logos.hero marker */
+function checkHasLogosHeroMarker(obj: unknown): boolean {
+  if (Array.isArray(obj)) {
+    return obj.some(item =>
+      (item as any)?.__docusite_logos_hero || checkHasLogosHeroMarker(item),
+    )
+  }
+  if (obj && typeof obj === 'object') {
+    if ((obj as any).__docusite_logos_hero) return true
+    return Object.values(obj as Record<string, unknown>).some(checkHasLogosHeroMarker)
+  }
+  return false
+}
+
 // ---------------------------------------------------------------------------
 // Recursive serializer
 // ---------------------------------------------------------------------------
@@ -541,6 +588,11 @@ function serializeArray(arr: unknown[], indent: number): string {
     if (item && typeof item === 'object' && (item as any).__docusite_source_links) {
       const options = (item as any).__docusite_source_links_options as DocusiteSourceLinks
       return `${INDENT.repeat(indent + 1)}__docusite_source_links_plugin(${serializeValue(options, indent + 2)})`
+    }
+    // Handle logos.hero marker
+    if (item && typeof item === 'object' && (item as any).__docusite_logos_hero) {
+      const src = (item as any).__docusite_logos_hero_src as string
+      return `${INDENT.repeat(indent + 1)}__docusite_logos_hero_plugin(${JSON.stringify(src)})`
     }
     const val = serializeValue(item, indent + 1)
     return `${INDENT.repeat(indent + 1)}${val}`

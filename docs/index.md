@@ -5,8 +5,6 @@ hero:
   name: Docusite
   text: Документация стала простой
   tagline: Пишите markdown — получайте красивый сайт документации
-  image:
-    src: /logo.svg
   actions:
     - theme: brand
       text: Начать

@@ -155,8 +155,16 @@ export interface DocusiteConfig {
   title?: string
   /** Site description */
   description?: string
-  /** Path to logo image */
-  logo?: string
+  /**
+   * Site logos — paths relative to the docs directory, including `public/`.
+   * Example: `'/public/logo.svg'` (file at `docs/public/logo.svg`).
+   * - `main` — navbar logo next to the site title
+   * - `hero` — home page hero image (`layout: home`); falls back to `main` if omitted
+   */
+  logos?: {
+    main?: string
+    hero?: string
+  }
 
   /** Brand colors — auto-generates VitePress CSS variables */
   colors?: DocusiteColors

@@ -77,7 +77,7 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
   // -- Theme config --
   const themeConfig: DefaultTheme.Config = {}
 
-  if (config.logo) themeConfig.logo = config.logo
+  if (config.logos?.main) themeConfig.logo = resolvePublicAssetPath(config.logos.main)
   if (config.nav) {
     themeConfig.nav = [...config.nav]
     transformNav(themeConfig.nav)
@@ -199,6 +199,17 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
     vpConfig.vite.plugins.push({ __docusite_source_links: true, __docusite_source_links_options: config.sourceLinks } as any)
   }
 
+  // -- logos.hero → inject hero.image into home layout markdown (falls back to logos.main) --
+  const heroLogo = config.logos?.hero ?? config.logos?.main
+  if (heroLogo) {
+    vpConfig.vite = vpConfig.vite ?? {}
+    vpConfig.vite.plugins = vpConfig.vite.plugins ?? []
+    vpConfig.vite.plugins.push({
+      __docusite_logos_hero: true,
+      __docusite_logos_hero_src: resolvePublicAssetPath(heroLogo),
+    } as any)
+  }
+
   // -- Theme config overrides (applied last, take priority) --
   if (config.themeConfigOverrides) {
     Object.assign(themeConfig, config.themeConfigOverrides)
@@ -224,6 +235,16 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Config paths use docs-dir form including `public/` (e.g. `/public/logo.svg`).
+ * VitePress serves `docs/public/` at site root, so strip the `public/` segment.
+ */
+function resolvePublicAssetPath(path: string): string {
+  const normalized = path.replace(/\\/g, '/')
+  const withoutPublic = normalized.replace(/^(?:\/)?public\//, '/')
+  return withoutPublic.startsWith('/') ? withoutPublic : `/${withoutPublic}`
+}
 
 function resolveSocialLinks(config: DocusiteConfig): DefaultTheme.SocialLink[] | undefined {
   const links: DefaultTheme.SocialLink[] = []

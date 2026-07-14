@@ -3,6 +3,10 @@ import { defineConfig } from 'docusite';
 export default defineConfig({
   title: 'Docusite Playground',
   description: 'Test playground for docusite',
+  logos: {
+    main: '/public/logo.svg',
+    hero: '/public/logo.svg',
+  },
   colors: {
     light: ['#646cff', '#ff6466', '#21ffc7'],
     dark: ['#535bf2', '#ff6466', '#21ffc7'],

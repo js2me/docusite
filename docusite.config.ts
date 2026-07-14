@@ -4,6 +4,10 @@ export default defineConfig({
   base: '/docusite',
   title: 'Docusite',
   description: 'Простой инструмент для документации на базе VitePress',
+  logos: {
+    main: '/public/logo.svg',
+    hero: '/public/logo.svg',
+  },
   colors: {
     light: ['#646cff', '#ff6466', '#21ffc7'],
     dark: ['#535bf2', '#ff6466', '#21ffc7'],
