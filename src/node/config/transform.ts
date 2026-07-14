@@ -150,10 +150,12 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
   }
 
   // -- llms plugin → add LLM docs link to nav --
+  // VitePress skips withBase for non-HTML assets (.txt) in nav links, so base must be inlined.
   const llmsEnabled = config.llms !== false
   if (llmsEnabled) {
     themeConfig.nav ??= []
-    themeConfig.nav.push({ text: 'LLM, AI docs 🤖', link: '/llms-full.txt' })
+    const basePrefix = (config.base ?? '/').replace(/\/$/, '')
+    themeConfig.nav.push({ text: 'LLM, AI docs 🤖', link: `${basePrefix}/llms-full.txt` })
 
     vpConfig.vite = vpConfig.vite ?? {}
     vpConfig.vite.plugins = vpConfig.vite.plugins ?? []
@@ -164,7 +166,11 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
     vpConfig.vite.plugins.push(llmsMarker)
 
     // Dev middleware for serving llms-full.txt in dev mode
-    vpConfig.vite.plugins.push({ __docusite_llms_dev: true, __docusite_llms_dev_docsDir: docsDir } as any)
+    vpConfig.vite.plugins.push({
+      __docusite_llms_dev: true,
+      __docusite_llms_dev_docsDir: docsDir,
+      __docusite_llms_dev_base: config.base ?? '/',
+    } as any)
   }
 
   // -- UnoCSS icons (i-logos:*, etc.) --

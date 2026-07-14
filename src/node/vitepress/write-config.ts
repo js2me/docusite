@@ -45,7 +45,8 @@ const docusiteDistDir = findDocusiteDistDir()
 const LLMS_DEV_PLUGIN_CODE = `import { readFileSync, readdirSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
-function __docusite_llms_dev_plugin(docsDir) {
+function __docusite_llms_dev_plugin(docsDir, base = '/') {
+  const basePrefix = (base || '/').replace(/\\/$/, '')
   return {
     name: 'docusite:llms-dev',
     configureServer(server) {
@@ -91,13 +92,19 @@ function __docusite_llms_dev_plugin(docsDir) {
         return files
       }
 
+      function matchLlmsPath(pathname, file) {
+        return pathname === '/' + file || pathname === basePrefix + '/' + file
+      }
+
       server.middlewares.use((req, res, next) => {
-        const url = req.url || ''
-        if (url === '/llms-full.txt' || url === '/llms.txt') {
+        const pathname = (req.url || '').split('?')[0]
+        const isLlmsFull = matchLlmsPath(pathname, 'llms-full.txt')
+        const isLlms = matchLlmsPath(pathname, 'llms.txt')
+        if (isLlmsFull || isLlms) {
           try {
             const files = collectMdFiles(docsDir, docsDir)
             let result
-            if (url === '/llms-full.txt') {
+            if (isLlmsFull) {
               result = files.map(f => '# ' + f.relativePath + '\\n\\n' + f.content).join('\\n\\n---\\n\\n') + '\\n'
             } else {
               const lines = files.map(f => {
@@ -517,7 +524,8 @@ function serializeArray(arr: unknown[], indent: number): string {
     // Handle llms dev plugin marker
     if (item && typeof item === 'object' && (item as any).__docusite_llms_dev) {
       const docsDir = (item as any).__docusite_llms_dev_docsDir as string
-      return `${INDENT.repeat(indent + 1)}__docusite_llms_dev_plugin(${JSON.stringify(docsDir)})`
+      const base = (item as any).__docusite_llms_dev_base as string | undefined
+      return `${INDENT.repeat(indent + 1)}__docusite_llms_dev_plugin(${JSON.stringify(docsDir)}, ${JSON.stringify(base ?? '/')})`
     }
     // Handle UnoCSS icons plugin marker
     if (item && typeof item === 'object' && (item as any).__docusite_unocss) {
