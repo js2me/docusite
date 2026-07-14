@@ -1,6 +1,7 @@
 import { resolve } from 'node:path'
 import { watch, existsSync } from 'node:fs'
 import { loadConfig } from '../config/load.js'
+import { resolveConfigTemplates } from '../config/resolve-templates.js'
 import { transformConfig } from '../config/transform.js'
 import { writeVitePressConfig } from '../vitepress/write-config.js'
 
@@ -22,10 +23,11 @@ function findConfigFile(cwd: string): string | undefined {
 export async function dev(root?: string, port?: number) {
   const cwd = process.cwd()
   const config = await loadConfig(cwd)
-  const docsDir = resolve(cwd, config.docsDir ?? './docs')
+  const resolvedConfig = resolveConfigTemplates(config, cwd)
+  const docsDir = resolve(cwd, resolvedConfig.docsDir ?? './docs')
 
   // Generate initial VitePress config
-  const result = transformConfig(config, docsDir)
+  const result = transformConfig(resolvedConfig, docsDir)
   writeVitePressConfig(docsDir, result.config, {
     versions: result.versions,
     versionsLatestLink: result.versionsLatestLink,
@@ -51,8 +53,9 @@ export async function dev(root?: string, port?: number) {
       debounceTimer = setTimeout(async () => {
         try {
           const newConfig = await loadConfig(cwd)
-          const newDocsDir = resolve(cwd, newConfig.docsDir ?? './docs')
-          const newResult = transformConfig(newConfig, newDocsDir)
+          const newResolvedConfig = resolveConfigTemplates(newConfig, cwd)
+          const newDocsDir = resolve(cwd, newResolvedConfig.docsDir ?? './docs')
+          const newResult = transformConfig(newResolvedConfig, newDocsDir)
           writeVitePressConfig(newDocsDir, newResult.config, {
             versions: newResult.versions,
             versionsLatestLink: newResult.versionsLatestLink,

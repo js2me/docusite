@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { DocusiteContentInjection } from '../../shared/types.js'
 
-function readPackageJson(cwd: string, packageJsonPath?: string): Record<string, unknown> | undefined {
+export function readPackageJson(cwd: string, packageJsonPath?: string): Record<string, unknown> | undefined {
   const resolvedPath = packageJsonPath
     ? resolve(cwd, packageJsonPath.endsWith('package.json') ? packageJsonPath : `${packageJsonPath}/package.json`)
     : resolve(cwd, 'package.json')

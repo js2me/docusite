@@ -36,6 +36,7 @@ Docusite ищет конфигурацию в следующем порядке:
 | `changelog` | `boolean \| string \| DocusiteChangelog` | — | Ссылка на changelog ([подробнее](/guide/changelog)) |
 | `search` | `DocusiteSearch` | `'local'` | Поиск ([подробнее](/guide/search)) |
 | `llms` | `boolean \| DocusiteLlmsOptions` | `true` | Генерация llms.txt ([подробнее](/guide/llms)) |
+| `sitemap` | `boolean \| DocusiteSitemapOptions` | `true` при наличии `github` | Генерация sitemap.xml |
 | `head` | `HeadConfig[]` | — | Дополнительные теги `<head>` |
 | `socialLinks` | `SocialLink[]` | — | Ссылки на соцсети |
 | `customCss` | `string[]` | — | Пользовательские CSS-файлы ([подробнее](/guide/custom-css)) |
@@ -107,11 +108,40 @@ export default defineConfig({
   changelog: { src: '../CHANGELOG.md' },
   search: 'local',
   llms: true,
-  socialLinks: [
-    { icon: 'github', link: 'https://github.com/user/repo' },
-  ],
+  github: 'https://github.com/user/repo',
   contentInjections: [
     { key: 'version', value: { major: 2, minor: 0, full: '2.0.0' } },
   ],
+})
+```
+
+## Sitemap
+
+Docusite автоматически генерирует `sitemap.xml` при помощи встроенной функции VitePress. Если задана опция `github`, hostname для sitemap автоматически выводится из URL репозитория:
+
+- `github: 'https://github.com/js2me/docusite'` → `hostname: 'https://js2me.github.io/docusite'`
+
+```ts
+export default defineConfig({
+  github: 'https://github.com/js2me/docusite',
+  // sitemap включён автоматически
+})
+```
+
+Явное указание hostname:
+
+```ts
+export default defineConfig({
+  sitemap: {
+    hostname: 'https://myproject.dev',
+  },
+})
+```
+
+Отключение sitemap:
+
+```ts
+export default defineConfig({
+  sitemap: false,
 })
 ```

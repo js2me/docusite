@@ -137,6 +137,21 @@ export interface DocusiteContentInjection {
 }
 
 // ---------------------------------------------------------------------------
+// Sitemap
+// ---------------------------------------------------------------------------
+
+export interface DocusiteSitemapOptions {
+  /**
+   * Site hostname for sitemap URLs, e.g. `'https://myproject.dev'`.
+   * When `github` is set, auto-derived from the GitHub URL (e.g. `'https://js2me.github.io/docusite'`).
+   * Set explicitly to override the auto-derived value.
+   */
+  hostname?: string
+  /** Include only the date (not time) in `<lastmod>` tags (default: `false`) */
+  lastmodDateOnly?: boolean
+}
+
+// ---------------------------------------------------------------------------
 // Main config
 // ---------------------------------------------------------------------------
 
@@ -148,12 +163,13 @@ export interface DocusiteConfig {
    * Base URL the site will be deployed at (VitePress `base`).
    * Set when deploying under a sub path, e.g. `'/bar/'` for `https://foo.github.io/bar/`.
    * Must start and end with a slash (default: `'/'`).
+   * Supports `@{key.path}` template syntax, e.g. `` `/@{packageJson.description}/` ``
    */
   base?: string
 
-  /** Site title */
+  /** Site title. Supports `@{key.path}` template syntax, e.g. `'@{packageJson.name}'` */
   title?: string
-  /** Site description */
+  /** Site description. Supports `@{key.path}` template syntax, e.g. `'@{packageJson.description}'` */
   description?: string
   /**
    * Site logos — paths relative to the docs directory, including `public/`.
@@ -231,6 +247,13 @@ export interface DocusiteConfig {
   /** Raw VitePress theme config overrides (merged last) */
   themeConfigOverrides?: Partial<DefaultTheme.Config>
 
+  /** Enable sitemap.xml generation (default: `true` when `github` is set).
+   *  - `true` — auto-derive hostname from `github` URL
+   *  - `false` — disable sitemap
+   *  - `{ hostname, lastmodDateOnly }` — explicit options (hostname auto-derived from `github` if omitted)
+   */
+  sitemap?: boolean | DocusiteSitemapOptions
+
   /** Raw VitePress site config overrides (merged last) */
   siteConfigOverrides?: Record<string, unknown>
 }
@@ -242,14 +265,18 @@ export interface DocusiteConfig {
 /**
  * Define docusite configuration with type hints.
  *
+ * String fields support `@{key.path}` template syntax for referencing
+ * content injection values (built-in: `packageJson` from package.json).
+ *
  * @example
  * ```ts
  * import { defineConfig } from 'docusite'
  *
  * export default defineConfig({
- *   title: 'My Project',
+ *   base: `/@{packageJson.description}/`,
+ *   title: '@{packageJson.name}',
+ *   description: '@{packageJson.description}',
  *   colors: { light: '#646cff', dark: '#535bf2' },
- *   colors: { light: ['#646cff', '#ff6466', '#21ffc7'], dark: ['#535bf2', '#ff6466', '#21ffc7'] },
  * })
  * ```
  */

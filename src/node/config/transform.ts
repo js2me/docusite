@@ -1,5 +1,5 @@
 import type { UserConfig, DefaultTheme } from 'vitepress'
-import type { DocusiteConfig, DocusiteContentInjection, DocusiteLocale, DocusiteSearch, DocusiteVersions } from '../../shared/types.js'
+import type { DocusiteConfig, DocusiteContentInjection, DocusiteLocale, DocusiteSearch, DocusiteSitemapOptions, DocusiteVersions } from '../../shared/types.js'
 import { prepareContentInjections } from './content-injections.js'
 import { generateBrandCSS, generateBaseCSS } from '../theme/css.js'
 
@@ -226,6 +226,12 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
     } as any)
   }
 
+  // -- Sitemap (enabled by default when `github` is set) --
+  const sitemapResolved = resolveSitemap(config.sitemap, config.github)
+  if (sitemapResolved) {
+    vpConfig.sitemap = sitemapResolved
+  }
+
   // -- Theme config overrides (applied last, take priority) --
   if (config.themeConfigOverrides) {
     Object.assign(themeConfig, config.themeConfigOverrides)
@@ -322,6 +328,42 @@ function findFirstLink(sidebar?: DefaultTheme.Sidebar): string | undefined {
     if ('link' in group && group.link) return group.link
   }
   return undefined
+}
+
+// ---------------------------------------------------------------------------
+// Sitemap
+// ---------------------------------------------------------------------------
+
+function resolveSitemap(
+  sitemap: DocusiteConfig['sitemap'],
+  github?: string,
+): { hostname: string; lastmodDateOnly?: boolean } | undefined {
+  // Explicitly disabled
+  if (sitemap === false) return undefined
+
+  const autoHostname = github ? deriveSitemapHostname(github) : undefined
+
+  // `true` or omitted — use auto-derived hostname from `github`
+  if (sitemap === true || sitemap === undefined) {
+    return autoHostname ? { hostname: autoHostname } : undefined
+  }
+
+  // Object form — merge auto-derived hostname with explicit options
+  return {
+    hostname: sitemap.hostname ?? autoHostname ?? '',
+    ...(sitemap.lastmodDateOnly !== undefined && { lastmodDateOnly: sitemap.lastmodDateOnly }),
+  }
+}
+
+/**
+ * Derive GitHub Pages hostname from a GitHub repo URL.
+ * `https://github.com/js2me/docusite` → `https://js2me.github.io/docusite`
+ */
+function deriveSitemapHostname(github: string): string | undefined {
+  const match = github.match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+)/)
+  if (!match) return undefined
+  const [, owner, repo] = match
+  return `https://${owner}.github.io/${repo}`
 }
 
 // ---------------------------------------------------------------------------

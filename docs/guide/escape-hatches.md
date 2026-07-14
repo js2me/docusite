@@ -38,9 +38,6 @@ export default defineConfig({
   siteConfigOverrides: {
     cleanUrls: true,
     lastUpdated: true,
-    sitemap: {
-      hostname: 'https://myproject.dev',
-    },
   },
 })
 ```
@@ -54,7 +51,7 @@ export default defineConfig({
 | Переопределить текст навигации | `themeConfigOverrides.docFooter` |
 | Задать базовый URL развёртывания | `base` (или `siteConfigOverrides.base`) |
 | Включить чистые URL | `siteConfigOverrides.cleanUrls` |
-| Настроить sitemap | `siteConfigOverrides.sitemap` |
+| Настроить sitemap | `sitemap` (автоматически из `github`) |
 | Включить дату обновления | `siteConfigOverrides.lastUpdated` |
 
 ::: warning
