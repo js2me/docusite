@@ -2,14 +2,16 @@ import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { DocusiteContentInjection } from '../../shared/types.js'
 
-function readPackageJson(cwd: string): Record<string, unknown> | undefined {
-  const path = resolve(cwd, 'package.json')
-  if (!existsSync(path)) return undefined
+function readPackageJson(cwd: string, packageJsonPath?: string): Record<string, unknown> | undefined {
+  const resolvedPath = packageJsonPath
+    ? resolve(cwd, packageJsonPath.endsWith('package.json') ? packageJsonPath : `${packageJsonPath}/package.json`)
+    : resolve(cwd, 'package.json')
+  if (!existsSync(resolvedPath)) return undefined
 
   try {
-    return JSON.parse(readFileSync(path, 'utf-8')) as Record<string, unknown>
+    return JSON.parse(readFileSync(resolvedPath, 'utf-8')) as Record<string, unknown>
   } catch {
-    console.warn(`[docusite] Failed to parse package.json at ${path}`)
+    console.warn(`[docusite] Failed to parse package.json at ${resolvedPath}`)
     return undefined
   }
 }
@@ -22,10 +24,11 @@ function readPackageJson(cwd: string): Record<string, unknown> | undefined {
 export function prepareContentInjections(
   userInjections: DocusiteContentInjection[] | undefined,
   cwd: string,
+  packageJsonPath?: string,
 ): DocusiteContentInjection[] | undefined {
   const builtIn: DocusiteContentInjection[] = []
 
-  const packageJson = readPackageJson(cwd)
+  const packageJson = readPackageJson(cwd, packageJsonPath)
   if (packageJson) {
     builtIn.push({ key: 'packageJson', value: packageJson })
   }

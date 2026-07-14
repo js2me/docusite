@@ -2,6 +2,7 @@ import { cac } from 'cac'
 import { dev } from './commands/dev.js'
 import { build } from './commands/build.js'
 import { preview } from './commands/preview.js'
+import { init } from './commands/init.js'
 
 const cli = cac('docusite')
 
@@ -36,6 +37,17 @@ cli
       await preview(root, options?.port)
     } catch (e: any) {
       console.error('Preview failed:', e.message)
+      process.exit(1)
+    }
+  })
+
+cli
+  .command('init', 'Create a starter docusite.config.ts')
+  .action(async () => {
+    try {
+      await init()
+    } catch (e: any) {
+      console.error('Init failed:', e.message)
       process.exit(1)
     }
   })

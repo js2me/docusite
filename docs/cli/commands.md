@@ -1,6 +1,53 @@
 # CLI команды
 
-Docusite предоставляет три CLI-команды для разработки, сборки и предпросмотра документации.
+Docusite предоставляет CLI-команды для инициализации, разработки, сборки и предпросмотра документации.
+
+## `docusite init`
+
+Создаёт стартовый файл `docusite.config.ts` в текущей директории с примером конфигурации.
+
+```bash
+docusite init
+```
+
+Если файл конфигурации (`docusite.config.ts`, `.mts`, `.js` или `.mjs`) уже существует — команда завершится с ошибкой.
+
+Созданный файл содержит базовую конфигурацию с плейсхолдер-ссылками, которые нужно заменить на реальные:
+
+```ts
+import { defineConfig } from 'docusite'
+
+export default defineConfig({
+  title: 'My Project',
+  description: 'My project documentation',
+  colors: {
+    light: '#646cff',
+    dark: '#535bf2',
+  },
+  nav: [
+    { text: 'Guide', link: '/introduction/getting-started' },
+    { text: 'API', link: '/api/overview' },
+  ],
+  sidebar: {
+    '/': [
+      {
+        text: 'Introduction',
+        items: [
+          { text: 'Getting Started', link: '/introduction/getting-started' },
+        ],
+      },
+      {
+        text: 'API',
+        items: [
+          { text: 'Overview', link: '/api/overview' },
+        ],
+      },
+    ],
+  },
+  search: 'local',
+  github: 'https://github.com/user/repo',
+})
+```
 
 ## `docusite dev [root]`
 

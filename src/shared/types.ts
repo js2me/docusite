@@ -211,6 +211,11 @@ export interface DocusiteConfig {
    *  Built-in: `packageJson` is auto-injected from the project's package.json. */
   contentInjections?: DocusiteContentInjection[]
 
+  /** Custom path to package.json (relative to the project root).
+   *  By default, docusite reads `package.json` from the project root (`cwd`).
+   *  Set this to load it from a different location, e.g. `'..'` to read from the parent directory. */
+  packageJsonPath?: string
+
   /** Client-side runtime script — called only in the browser (not during SSR).
    * The function body is inlined into the generated theme's `enhanceApp()`.
    * Dynamic imports inside are resolved relative to `docs/.vitepress/theme/`.

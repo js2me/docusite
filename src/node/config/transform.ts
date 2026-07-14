@@ -66,7 +66,7 @@ export interface TransformResult {
 
 export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = process.cwd()): TransformResult {
   const vpConfig: UserConfig<DefaultTheme.Config> = {}
-  const contentInjections = prepareContentInjections(config.contentInjections, cwd)
+  const contentInjections = prepareContentInjections(config.contentInjections, cwd, config.packageJsonPath)
 
   // -- Site-level config --
   if (config.base) vpConfig.base = config.base
