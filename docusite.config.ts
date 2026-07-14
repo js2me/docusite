@@ -58,7 +58,7 @@ export default defineConfig({
   changelog: { src: 'CHANGELOG.md' },
   search: 'local',
   llms: true,
-  github: 'https://github.com/user/docusite',
+  github: 'https://github.com/js2me/docusite',
   contentInjections: [
     { key: 'version', value: { major: 2, minor: 0, full: '2.0.0' } },
   ],
