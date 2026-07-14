@@ -1,5 +1,0 @@
----
-"docusite": patch
----
-
-fix runtimeScript
