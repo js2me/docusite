@@ -1,5 +1,5 @@
 import type { UserConfig, DefaultTheme } from 'vitepress'
-import type { DocusiteConfig, DocusiteContentInjection, DocusiteLocale, DocusiteSearch, DocusiteSitemapOptions, DocusiteVersions } from '../../shared/types.js'
+import type { DocusiteConfig, DocusiteContentInjection, DocusiteLocale, DocusiteNav, DocusiteSearch, DocusiteSitemapOptions, DocusiteVersions } from '../../shared/types.js'
 import { prepareContentInjections } from './content-injections.js'
 import { resolveRuntimeScriptCode } from './runtime-script.js'
 import { generateBrandCSS, generateBaseCSS } from '../theme/css.js'
@@ -63,6 +63,7 @@ export interface TransformResult {
   changelogSrc?: string
   contentInjections?: DocusiteContentInjection[]
   runtimeScriptCode?: string
+  hasPathKeyedNav?: boolean
 }
 
 export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = process.cwd()): TransformResult {
@@ -94,10 +95,6 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
         { rel: 'icon', href: withSiteBase(faviconPath, config.base), type: faviconType(faviconPath) },
       ])
     }
-  }
-  if (config.nav) {
-    themeConfig.nav = [...config.nav]
-    transformNav(themeConfig.nav)
   }
   if (config.sidebar) {
     themeConfig.sidebar = config.sidebar
@@ -134,14 +131,15 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
     vpConfig.locales = resolveLocales(config.locales)
   }
 
-  // -- Versioning → add NavVersionsFlyout to nav --
+  // -- Build auto-appended nav items (versions flyout, changelog, llms) --
+  const autoNavItems: DefaultTheme.NavItem[] = []
+  let changelogSrc: string | undefined
+
   if (config.versions) {
-    themeConfig.nav ??= []
     const v = config.versions
     const latestLabel = v.latest.startsWith('v') ? v.latest : `v${v.latest}`
-    // Find the first page link to use as the latest version link
     const latestLink = findFirstLink(config.sidebar)
-    themeConfig.nav.push({
+    autoNavItems.push({
       component: 'NavVersionsFlyout',
       props: {
         latestLabel,
@@ -151,28 +149,21 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
     } as any)
   }
 
-  // -- Changelog → add CHANGELOG link to nav (default: true) --
-  let changelogSrc: string | undefined
   if (config.changelog !== false) {
-    themeConfig.nav ??= []
     if (typeof config.changelog === 'object') {
-      // { src: string, link?: string }
       changelogSrc = config.changelog.src
       const changelogLink = config.changelog.link ?? '/changelog'
-      themeConfig.nav.push({ text: 'CHANGELOG', link: changelogLink })
+      autoNavItems.push({ text: 'CHANGELOG', link: changelogLink })
     } else {
       const changelogLink = typeof config.changelog === 'string' ? config.changelog : '/changelog'
-      themeConfig.nav.push({ text: 'CHANGELOG', link: changelogLink })
+      autoNavItems.push({ text: 'CHANGELOG', link: changelogLink })
     }
   }
 
-  // -- llms plugin → add LLM docs link to nav --
-  // VitePress skips withBase for non-HTML assets (.txt) in nav links, so base must be inlined.
   const llmsEnabled = config.llms !== false
   if (llmsEnabled) {
-    themeConfig.nav ??= []
     const basePrefix = (config.base ?? '/').replace(/\/$/, '')
-    themeConfig.nav.push({ text: 'LLM, AI docs 🤖', link: `${basePrefix}/llms-full.txt` })
+    autoNavItems.push({ text: 'LLM, AI docs 🤖', link: `${basePrefix}/llms-full.txt` })
 
     vpConfig.vite = vpConfig.vite ?? {}
     vpConfig.vite.plugins = vpConfig.vite.plugins ?? []
@@ -188,6 +179,46 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
       __docusite_llms_dev_docsDir: docsDir,
       __docusite_llms_dev_base: config.base ?? '/',
     } as any)
+  }
+
+  // -- Nav: flat array or path-keyed --
+  let hasPathKeyedNav = false
+
+  if (isPathKeyedNav(config.nav)) {
+    // Path-keyed nav: each path prefix gets its own nav via VitePress locales
+    const rootNav = config.nav['/'] ?? []
+    themeConfig.nav = [...rootNav, ...autoNavItems]
+    transformNav(themeConfig.nav)
+
+    const navLocaleEntries = resolveNavLocales(
+      config.nav,
+      autoNavItems,
+      deriveRootLabel(config),
+      deriveRootLang(config),
+    )
+
+    if (navLocaleEntries.length > 0) {
+      vpConfig.locales ??= {}
+      for (const entry of navLocaleEntries) {
+        vpConfig.locales[entry.key] = entry.vpLocale
+      }
+      hasPathKeyedNav = true
+    }
+  } else if (config.nav) {
+    // Flat nav (existing behavior)
+    themeConfig.nav = [...config.nav, ...autoNavItems]
+    transformNav(themeConfig.nav)
+  } else {
+    // No user nav — only auto-appended items
+    if (autoNavItems.length > 0) {
+      themeConfig.nav = [...autoNavItems]
+      transformNav(themeConfig.nav)
+    }
+  }
+
+  // Ensure locale keys are ordered longest-first for correct prefix matching
+  if (vpConfig.locales) {
+    vpConfig.locales = sortLocaleKeys(vpConfig.locales)
   }
 
   // -- UnoCSS icons (i-logos:*, etc.) --
@@ -252,6 +283,7 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
     changelogSrc,
     contentInjections,
     runtimeScriptCode: resolveRuntimeScriptCode(config.runtimeScript, cwd, docsDir),
+    hasPathKeyedNav,
   }
 }
 
@@ -416,4 +448,86 @@ function resolveLocales(
   }
 
   return result
+}
+
+// ---------------------------------------------------------------------------
+// Path-keyed nav
+// ---------------------------------------------------------------------------
+
+/** Type guard: is the nav config a path-keyed Record (not a flat array)? */
+function isPathKeyedNav(nav: DocusiteNav | undefined): nav is Record<string, DefaultTheme.NavItem[]> {
+  return nav != null && !Array.isArray(nav)
+}
+
+/** Derive the label for virtual locales (for language switcher suppression) */
+function deriveRootLabel(config: DocusiteConfig): string {
+  if (config.locales?.root?.label) return config.locales.root.label
+  return config.title || 'Root'
+}
+
+/** Derive the lang for virtual locales */
+function deriveRootLang(config: DocusiteConfig): string {
+  if (config.locales?.root?.lang) return config.locales.root.lang
+  return 'en'
+}
+
+interface NavLocaleEntry {
+  /** VitePress locale key (e.g. 'v1', 'api') */
+  key: string
+  /** VitePress locale config object */
+  vpLocale: NonNullable<UserConfig<DefaultTheme.Config>['locales']>[string]
+}
+
+/**
+ * Convert a path-keyed nav map into VitePress locale entries.
+ * Each non-`/` key becomes a virtual locale with its own `themeConfig.nav`.
+ * All virtual locales share the root label/lang so the language switcher
+ * is suppressed (VitePress's `useLangs()` filters out same-label locales).
+ */
+function resolveNavLocales(
+  pathKeyedNav: Record<string, DefaultTheme.NavItem[]>,
+  autoNavItems: DefaultTheme.NavItem[],
+  rootLabel: string,
+  rootLang: string,
+): NavLocaleEntry[] {
+  const entries: NavLocaleEntry[] = []
+
+  for (const [pathPrefix, navItems] of Object.entries(pathKeyedNav)) {
+    // The '/' key goes into themeConfig.nav on the main config, not a locale
+    if (pathPrefix === '/') continue
+
+    // Strip leading/trailing slashes to create locale key
+    // e.g. '/v1/' → 'v1', 'api' → 'api'
+    const localeKey = pathPrefix.replace(/^\/|\/$/g, '')
+    if (!localeKey) continue
+
+    const fullNav = [...navItems, ...autoNavItems]
+    transformNav(fullNav)
+
+    entries.push({
+      key: localeKey,
+      vpLocale: {
+        label: rootLabel,
+        lang: rootLang,
+        themeConfig: { nav: fullNav },
+      },
+    })
+  }
+
+  return entries
+}
+
+/**
+ * Sort VitePress locale keys longest-first so `getLocaleForPath()` (which uses
+ * `Object.keys().find()`) matches the most specific prefix first.
+ * The 'root' key always stays last (it's the fallback).
+ */
+function sortLocaleKeys(locales: Record<string, any>): Record<string, any> {
+  const entries = Object.entries(locales)
+  entries.sort((a, b) => {
+    if (a[0] === 'root') return 1
+    if (b[0] === 'root') return -1
+    return b[0].length - a[0].length
+  })
+  return Object.fromEntries(entries)
 }

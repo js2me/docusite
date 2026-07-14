@@ -26,6 +26,13 @@ export interface DocusiteColors {
 }
 
 // ---------------------------------------------------------------------------
+// Navigation
+// ---------------------------------------------------------------------------
+
+/** Navigation items, either a flat array or path-keyed map (like sidebar) */
+export type DocusiteNav = DefaultTheme.NavItem[] | Record<string, DefaultTheme.NavItem[]>
+
+// ---------------------------------------------------------------------------
 // Locale
 // ---------------------------------------------------------------------------
 
@@ -187,8 +194,8 @@ export interface DocusiteConfig {
   /** Brand colors — auto-generates VitePress CSS variables */
   colors?: DocusiteColors
 
-  /** Navigation items */
-  nav?: DefaultTheme.NavItem[]
+  /** Navigation items (flat array) or path-keyed per-section navigation (like sidebar) */
+  nav?: DocusiteNav
   /** Sidebar configuration */
   sidebar?: DefaultTheme.Sidebar
 

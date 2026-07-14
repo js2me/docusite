@@ -11,10 +11,17 @@ export default defineConfig({
     light: ['#646cff', '#ff6466', '#21ffc7'],
     dark: ['#535bf2', '#ff6466', '#21ffc7'],
   },
-  nav: [
-    { text: 'Guide', link: '/introduction/getting-started' },
-    { text: 'API', link: '/api/overview' },
-  ],
+  nav: {
+    '/': [
+      { text: 'Guide', link: '/introduction/getting-started' },
+      { text: 'API', link: '/api/overview' },
+    ],
+    '/v1/': [
+      { text: 'Guide', link: '/v1/introduction/getting-started' },
+      { text: 'API', link: '/v1/api/overview' },
+      { text: 'Examples', link: '/v1/introduction/markdown-examples' },
+    ],
+  },
   runtimeScript: () => {
     console.log('runtime script!');
   },
@@ -24,12 +31,14 @@ export default defineConfig({
         text: 'Introduction',
         items: [
           { text: 'Getting Started', link: '/v1/introduction/getting-started' },
+          { text: 'Markdown Examples', link: '/v1/introduction/markdown-examples' },
         ],
       },
       {
         text: 'API Reference',
         items: [
           { text: 'Overview', link: '/v1/api/overview' },
+          { text: '<ReactMark /> Hooks', link: '/v1/api/react-hooks' },
         ],
       },
     ],

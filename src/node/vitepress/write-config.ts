@@ -228,6 +228,7 @@ export interface WriteOptions {
   changelogSrc?: string
   contentInjections?: DocusiteContentInjection[]
   runtimeScriptCode?: string
+  hasPathKeyedNav?: boolean
 }
 
 /**

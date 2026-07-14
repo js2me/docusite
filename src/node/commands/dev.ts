@@ -34,6 +34,7 @@ export async function dev(root?: string, port?: number) {
     changelogSrc: result.changelogSrc,
     contentInjections: result.contentInjections,
     runtimeScriptCode: result.runtimeScriptCode,
+    hasPathKeyedNav: result.hasPathKeyedNav,
   })
 
   // Start VitePress dev server
