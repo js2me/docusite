@@ -90,11 +90,13 @@ Site logos — paths relative to the docs directory, including `public/`
 logos: {
   main: '/public/logo.svg', // navbar, next to the site title
   hero: '/public/logo.svg', // home page hero image
+  favicon: '/public/logo.svg', // browser tab icon (optional; defaults to main)
 }
 ```
 
 - `main` — logo in the navbar next to the site title  
 - `hero` — hero image on pages with `layout: home` (injected into frontmatter; falls back to `main` if omitted)
+- `favicon` — favicon for the browser tab (falls back to `main` if omitted)
 
 ### `colors`
 

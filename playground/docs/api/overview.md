@@ -25,7 +25,7 @@ export default defineConfig({
 | `docsDir`     | `string`                 | `'./docs'` | Path to docs directory  |
 | `title`       | `string`                 | —          | Site title              |
 | `description` | `string`                 | —          | Site description        |
-| `logos`       | `{ main?: string; hero?: string }` | —          | Logos: `main` (navbar), `hero` (home) |
+| `logos`       | `{ main?: string; hero?: string; favicon?: string }` | — | Logos: `main` (navbar), `hero` (home→main), `favicon` (tab→main) |
 | `colors`      | `{ light?, dark? }`      | —          | Brand colors            |
 | `versions`    | `{ latest, older? }`     | —          | Version selector config |
 | `search`      | `'local' \| Algolia`     | `'local'`  | Search provider         |

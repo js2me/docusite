@@ -28,7 +28,7 @@ Docusite ищет конфигурацию в следующем порядке:
 | `base` | `string` | `'/'` | Базовый URL развёртывания (VitePress `base`) — для деплоя в подкаталог, например `'/bar/'` |
 | `title` | `string` | — | Заголовок сайта |
 | `description` | `string` | — | Описание сайта |
-| `logos` | `{ main?: string; hero?: string }` | — | Логотипы (`/public/...` относительно docs): `main` — в шапке, `hero` — на главной (если не указан — берётся `main`) |
+| `logos` | `{ main?: string; hero?: string; favicon?: string }` | — | Логотипы (`/public/...`): `main` — шапка, `hero` — главная (иначе `main`), `favicon` — вкладка (иначе `main`) |
 | `colors` | `DocusiteColors` | — | Фирменные цвета ([подробнее](/guide/brand-colors)) |
 | `nav` | `NavItem[]` | — | Навигация в шапке сайта |
 | `sidebar` | `Sidebar` | — | Боковое меню |

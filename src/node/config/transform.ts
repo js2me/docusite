@@ -77,7 +77,23 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
   // -- Theme config --
   const themeConfig: DefaultTheme.Config = {}
 
-  if (config.logos?.main) themeConfig.logo = resolvePublicAssetPath(config.logos.main)
+  if (config.logos?.main) {
+    themeConfig.logo = resolvePublicAssetPath(config.logos.main)
+  }
+
+  // Favicon from logos.favicon (falls back to logos.main). Skip if user set one in `head`.
+  // VitePress does not rewrite head href with `base` — do it explicitly.
+  const faviconSrc = config.logos?.favicon ?? config.logos?.main
+  if (faviconSrc) {
+    vpConfig.head ??= []
+    if (!hasFavicon(vpConfig.head)) {
+      const faviconPath = resolvePublicAssetPath(faviconSrc)
+      vpConfig.head.push([
+        'link',
+        { rel: 'icon', href: withSiteBase(faviconPath, config.base), type: faviconType(faviconPath) },
+      ])
+    }
+  }
   if (config.nav) {
     themeConfig.nav = [...config.nav]
     transformNav(themeConfig.nav)
@@ -244,6 +260,36 @@ function resolvePublicAssetPath(path: string): string {
   const normalized = path.replace(/\\/g, '/')
   const withoutPublic = normalized.replace(/^(?:\/)?public\//, '/')
   return withoutPublic.startsWith('/') ? withoutPublic : `/${withoutPublic}`
+}
+
+/** Prefix a root-absolute asset path with VitePress `base` (e.g. `/docusite` + `/logo.svg`). */
+function withSiteBase(path: string, base = '/'): string {
+  const normalizedBase = base.replace(/\/$/, '')
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  if (!normalizedBase || normalizedBase === '') return normalizedPath
+  return `${normalizedBase}${normalizedPath}`
+}
+
+function faviconType(href: string): string {
+  const ext = href.split('?')[0].split('.').pop()?.toLowerCase()
+  switch (ext) {
+    case 'svg': return 'image/svg+xml'
+    case 'png': return 'image/png'
+    case 'ico': return 'image/x-icon'
+    case 'jpg':
+    case 'jpeg': return 'image/jpeg'
+    case 'webp': return 'image/webp'
+    case 'gif': return 'image/gif'
+    default: return 'image/png'
+  }
+}
+
+function hasFavicon(head: NonNullable<UserConfig['head']>): boolean {
+  return head.some((tag) => {
+    if (!Array.isArray(tag) || tag[0] !== 'link') return false
+    const rel = (tag[1] as Record<string, string>).rel ?? ''
+    return /\bicon\b/i.test(rel) || rel === 'shortcut icon' || rel === 'apple-touch-icon'
+  })
 }
 
 function resolveSocialLinks(config: DocusiteConfig): DefaultTheme.SocialLink[] | undefined {

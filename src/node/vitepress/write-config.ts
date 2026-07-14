@@ -344,9 +344,18 @@ function buildThemeIndexContent(versions?: DocusiteVersions, versionsLatestLink?
   }
 
   const enhanceAppBody = components.join('\n    ')
-  const runtimeBlock = runtimeBody
-    ? `\n\n    if (!import.meta.env.SSR) {\n      ${runtimeBody}\n    }`
-    : ''
+  // VitePress binds Ctrl/Cmd+K via event.key === 'k', which fails on non-Latin
+  // layouts (e.g. Ctrl+Л on Russian). Open search via physical KeyK instead.
+  const searchHotkeyFix = `window.addEventListener('keydown', (e) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.code !== 'KeyK') return
+      if (e.key.toLowerCase() === 'k') return
+      const btn = document.querySelector<HTMLButtonElement>('.VPNavBarSearch .DocSearch-Button')
+      if (!btn) return
+      e.preventDefault()
+      btn.click()
+    })`
+  const clientBody = [searchHotkeyFix, runtimeBody].filter(Boolean).join('\n\n    ')
+  const runtimeBlock = `\n\n    if (!import.meta.env.SSR) {\n      ${clientBody}\n    }`
 
   return `${imports.join('\n')}
 ${versions ? `import { h } from 'vue'` : ''}

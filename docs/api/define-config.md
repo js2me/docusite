@@ -36,10 +36,12 @@ interface DocusiteConfig {
   /** Логотипы сайта — путь относительно docs, с `public/`
    *  (файл `docs/public/logo.svg` → `'/public/logo.svg'`).
    *  `main` — в шапке слева от названия;
-   *  `hero` — на главной (`layout: home`); если не указан — берётся `main` */
+   *  `hero` — на главной (`layout: home`); если не указан — берётся `main`;
+   *  `favicon` — иконка вкладки; если не указан — берётся `main` */
   logos?: {
     main?: string
     hero?: string
+    favicon?: string
   }
 
   /** Фирменные цвета — автогенерация CSS-переменных VitePress */

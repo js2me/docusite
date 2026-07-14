@@ -160,10 +160,12 @@ export interface DocusiteConfig {
    * Example: `'/public/logo.svg'` (file at `docs/public/logo.svg`).
    * - `main` — navbar logo next to the site title
    * - `hero` — home page hero image (`layout: home`); falls back to `main` if omitted
+   * - `favicon` — browser tab icon; falls back to `main` if omitted
    */
   logos?: {
     main?: string
     hero?: string
+    favicon?: string
   }
 
   /** Brand colors — auto-generates VitePress CSS variables */
