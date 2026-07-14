@@ -1,6 +1,6 @@
 {
   "name": "docusite",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "Dead-simple documentation tool powered by VitePress",
   "type": "module",
   "bin": {
@@ -22,7 +22,8 @@
     "docs:playground": "pnpm i && cd playground && pnpm docs:dev",
     "docs:dev": "./bin/cli.mjs dev",
     "docs:build": "./bin/cli.mjs build",
-    "docs:preview": "./bin/cli.mjs preview"
+    "docs:preview": "./bin/cli.mjs preview",
+    "version-packages": "pnpm exec changeset version && pnpm install --lockfile-only"
   },
   "keywords": [
     "documentation",
@@ -46,6 +47,8 @@
     "vitepress-plugin-llms": "^1.1.0"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.30.0",
+    "sborshik": "^3.5.0",
     "tsup": "^8.4.0",
     "typescript": "^5.8.3"
   }
