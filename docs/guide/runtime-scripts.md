@@ -32,16 +32,25 @@ enhanceApp() {
 
 ## Динамические импорты
 
-Динамические импорты внутри `runtimeScript` разрешаются относительно `docs/.vitepress/theme/`:
+Относительные импорты внутри `runtimeScript` пишутся относительно файла конфига (`docusite.config.ts`). Docusite сам перепишет пути для сгенерированной темы:
 
 ```ts
 import { defineConfig } from 'docusite'
 
 export default defineConfig({
   runtimeScript: () => {
-    void import('my-devtools').then((m) => m.loadDevtools())
+    // путь от docs/docusite.config.ts → docs/.internal/scripts/load-devtools
+    void import('./.internal/scripts/load-devtools').then((m) => m.loadDevtools())
   },
 })
+```
+
+Пакетные импорты работают как обычно:
+
+```ts
+runtimeScript: () => {
+  void import('my-devtools').then((m) => m.loadDevtools())
+},
 ```
 
 ## Примеры использования

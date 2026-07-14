@@ -1,6 +1,7 @@
 import type { UserConfig, DefaultTheme } from 'vitepress'
 import type { DocusiteConfig, DocusiteContentInjection, DocusiteLocale, DocusiteSearch, DocusiteSitemapOptions, DocusiteVersions } from '../../shared/types.js'
 import { prepareContentInjections } from './content-injections.js'
+import { resolveRuntimeScriptCode } from './runtime-script.js'
 import { generateBrandCSS, generateBaseCSS } from '../theme/css.js'
 
 // ---------------------------------------------------------------------------
@@ -250,7 +251,7 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
     versionsLatestLink: config.versions ? (findFirstLink(config.sidebar) || '/') : undefined,
     changelogSrc,
     contentInjections,
-    runtimeScriptCode: config.runtimeScript?.toString(),
+    runtimeScriptCode: resolveRuntimeScriptCode(config.runtimeScript, cwd, docsDir),
   }
 }
 
