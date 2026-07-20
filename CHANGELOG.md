@@ -1,5 +1,11 @@
 # docusite
 
+## 0.1.2
+
+### Patch Changes
+
+- 8023ae5: update llms.txt link
+
 ## 0.1.1
 
 ### Patch Changes
