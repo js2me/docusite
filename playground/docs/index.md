@@ -32,7 +32,7 @@ features:
   - title: Versioned Docs
     icon: 📦
     details: Version selector out of the box with animated pill dropdown
-  - title: llms-full.txt
+  - title: llms.txt
     icon: 🤖
     details: Automatic llms.txt generation for LLM-friendly documentation
   - title: i18n

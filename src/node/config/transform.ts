@@ -163,7 +163,7 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
   const llmsEnabled = config.llms !== false
   if (llmsEnabled) {
     const basePrefix = (config.base ?? '/').replace(/\/$/, '')
-    autoNavItems.push({ text: 'LLM, AI docs 🤖', link: `${basePrefix}/llms-full.txt` })
+    autoNavItems.push({ text: 'LLM, AI docs 🤖', link: `${basePrefix}/llms.txt` })
 
     vpConfig.vite = vpConfig.vite ?? {}
     vpConfig.vite.plugins = vpConfig.vite.plugins ?? []
@@ -173,7 +173,7 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
     }
     vpConfig.vite.plugins.push(llmsMarker)
 
-    // Dev middleware for serving llms-full.txt in dev mode
+    // Dev middleware for serving llms.txt in dev mode
     vpConfig.vite.plugins.push({
       __docusite_llms_dev: true,
       __docusite_llms_dev_docsDir: docsDir,
