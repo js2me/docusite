@@ -33,6 +33,7 @@ Docusite ищет конфигурацию в следующем порядке:
 | `nav` | `NavItem[]` | — | Навигация в шапке сайта |
 | `sidebar` | `Sidebar` | — | Боковое меню |
 | `locales` | `Record<string, DocusiteLocale>` | — | Локали для i18n ([подробнее](/guide/i18n)) |
+| `versions` | `DocusiteVersions` | — | Версионирование документации ([подробнее](/guide/versioning)) |
 | `changelog` | `boolean \| string \| DocusiteChangelog` | — | Ссылка на changelog ([подробнее](/guide/changelog)) |
 | `search` | `DocusiteSearch` | `'local'` | Поиск ([подробнее](/guide/search)) |
 | `llms` | `boolean \| DocusiteLlmsOptions` | `true` | Генерация llms.txt ([подробнее](/guide/llms)) |
