@@ -1,5 +1,11 @@
 # docusite
 
+## 0.1.4
+
+### Patch Changes
+
+- a54356f: add og tags
+
 ## 0.1.3
 
 ### Patch Changes
