@@ -52,6 +52,7 @@ export default defineConfig({
 | Задать базовый URL развёртывания | `base` (или `siteConfigOverrides.base`) |
 | Включить чистые URL | `siteConfigOverrides.cleanUrls` |
 | Настроить sitemap | `sitemap` (автоматически из `github`) |
+| Open Graph / Twitter Cards | автоматически при `github` / `sitemap.hostname`; картинка — `logos.banner` |
 | Включить дату обновления | `siteConfigOverrides.lastUpdated` |
 
 ::: warning

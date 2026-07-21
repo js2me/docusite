@@ -28,7 +28,7 @@ Docusite ищет конфигурацию в следующем порядке:
 | `base` | `string` | `'/'` | Базовый URL развёртывания (VitePress `base`) — для деплоя в подкаталог, например `'/bar/'` |
 | `title` | `string` | — | Заголовок сайта |
 | `description` | `string` | — | Описание сайта |
-| `logos` | `{ main?: string; hero?: string; favicon?: string }` | — | Логотипы (`/public/...`): `main` — шапка, `hero` — главная (иначе `main`), `favicon` — вкладка (иначе `main`) |
+| `logos` | `{ main?: string; hero?: string; favicon?: string; banner?: string }` | — | Логотипы (`/public/...`): `main` — шапка, `hero` — главная (иначе `main`), `favicon` — вкладка (иначе `main`), `banner` — OG/Twitter-картинка |
 | `colors` | `DocusiteColors` | — | Фирменные цвета ([подробнее](/guide/brand-colors)) |
 | `nav` | `NavItem[]` | — | Навигация в шапке сайта |
 | `sidebar` | `Sidebar` | — | Боковое меню |
@@ -81,6 +81,7 @@ export default defineConfig({
   logos: {
     main: '/public/logo.svg',
     hero: '/public/logo.svg',
+    banner: '/public/banner.png',
   },
   colors: {
     light: ['#646cff', '#ff6466', '#21ffc7'],
@@ -146,3 +147,38 @@ export default defineConfig({
   sitemap: false,
 })
 ```
+
+## Open Graph и Twitter Cards
+
+Если известен hostname сайта (из `github` или `sitemap.hostname`), docusite автоматически добавляет в `<head>` теги для шаринга в соцсетях:
+
+- `link[rel=canonical]`
+- Open Graph: `og:title`, `og:description`, `og:type`, `og:url`, `og:locale`, `og:site_name`
+- Twitter Card: `twitter:card` (`summary_large_image`), `twitter:site`, `twitter:title`, `twitter:description`
+
+`title` и `description` берутся из конфига. Локаль — из `locales.root.lang` (по умолчанию `'en'`).
+
+### Картинка для превью
+
+Теги `og:image` / `twitter:image` добавляются **только** если задан `logos.banner`:
+
+```ts
+export default defineConfig({
+  title: 'My Project',
+  description: 'Документация моего проекта',
+  github: 'https://github.com/user/repo',
+  logos: {
+    main: '/public/logo.svg',
+    banner: '/public/banner.png', // → https://user.github.io/repo/banner.png
+  },
+})
+```
+
+Положите файл в `docs/public/` (например `docs/public/banner.png`). Для соцсетей лучше PNG или JPG, не SVG.
+
+Hostname для абсолютных URL тот же, что и у sitemap:
+
+- `github: 'https://github.com/user/repo'` → `https://user.github.io/repo`
+- или явный `sitemap.hostname`
+
+Если тег уже задан вручную в `head`, docusite его не дублирует.

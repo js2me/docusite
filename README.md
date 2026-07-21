@@ -91,12 +91,18 @@ logos: {
   main: '/public/logo.svg', // navbar, next to the site title
   hero: '/public/logo.svg', // home page hero image
   favicon: '/public/logo.svg', // browser tab icon (optional; defaults to main)
+  banner: '/public/banner.png', // Open Graph / Twitter card image
 }
 ```
 
 - `main` — logo in the navbar next to the site title  
 - `hero` — hero image on pages with `layout: home` (injected into frontmatter; falls back to `main` if omitted)
 - `favicon` — favicon for the browser tab (falls back to `main` if omitted)
+- `banner` — image for Open Graph / Twitter Cards (`og:image`, `twitter:image`); not set unless provided
+
+### Open Graph / Twitter Cards
+
+When a site hostname is known (`github` or `sitemap.hostname`), docusite injects canonical, Open Graph, and Twitter Card meta tags into `<head>`. Image tags are added only when `logos.banner` is set.
 
 ### `colors`
 

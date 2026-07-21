@@ -37,11 +37,13 @@ interface DocusiteConfig {
    *  (файл `docs/public/logo.svg` → `'/public/logo.svg'`).
    *  `main` — в шапке слева от названия;
    *  `hero` — на главной (`layout: home`); если не указан — берётся `main`;
-   *  `favicon` — иконка вкладки; если не указан — берётся `main` */
+   *  `favicon` — иконка вкладки; если не указан — берётся `main`;
+   *  `banner` — картинка для Open Graph / Twitter Cards (например `'/public/banner.png'`) */
   logos?: {
     main?: string
     hero?: string
     favicon?: string
+    banner?: string
   }
 
   /** Фирменные цвета — автогенерация CSS-переменных VitePress */

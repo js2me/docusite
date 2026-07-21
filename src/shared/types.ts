@@ -184,11 +184,13 @@ export interface DocusiteConfig {
    * - `main` — navbar logo next to the site title
    * - `hero` — home page hero image (`layout: home`); falls back to `main` if omitted
    * - `favicon` — browser tab icon; falls back to `main` if omitted
+   * - `banner` — Open Graph / Twitter card image (e.g. `'/public/banner.png'`)
    */
   logos?: {
     main?: string
     hero?: string
     favicon?: string
+    banner?: string
   }
 
   /** Brand colors — auto-generates VitePress CSS variables */

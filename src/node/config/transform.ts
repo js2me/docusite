@@ -264,6 +264,13 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
     vpConfig.sitemap = sitemapResolved
   }
 
+  // -- Open Graph / Twitter / canonical (when site hostname is known) --
+  const siteHostname = resolveSiteHostname(config, sitemapResolved?.hostname)
+  if (siteHostname) {
+    vpConfig.head ??= []
+    appendHeadTags(vpConfig.head, buildOpenGraphHeadTags(config, siteHostname))
+  }
+
   // -- Theme config overrides (applied last, take priority) --
   if (config.themeConfigOverrides) {
     Object.assign(themeConfig, config.themeConfigOverrides)
@@ -397,6 +404,102 @@ function deriveSitemapHostname(github: string): string | undefined {
   if (!match) return undefined
   const [, owner, repo] = match
   return `https://${owner}.github.io/${repo}`
+}
+
+/**
+ * Resolve absolute site hostname for OG / canonical URLs.
+ * Prefers explicit sitemap hostname, then sitemap result, then GitHub Pages derivation.
+ */
+function resolveSiteHostname(
+  config: DocusiteConfig,
+  sitemapHostname?: string,
+): string | undefined {
+  if (typeof config.sitemap === 'object' && config.sitemap.hostname) {
+    return config.sitemap.hostname
+  }
+  if (sitemapHostname) return sitemapHostname
+  if (config.github) return deriveSitemapHostname(config.github)
+  return undefined
+}
+
+// ---------------------------------------------------------------------------
+// Open Graph / Twitter
+// ---------------------------------------------------------------------------
+
+type HeadTag = NonNullable<UserConfig['head']>[number]
+
+/**
+ * Build site-level Open Graph, Twitter Card, and canonical tags
+ * (same set as sborshik `defineDocsVitepressConfig`).
+ * Image tags are added only when `logos.banner` is set.
+ */
+function buildOpenGraphHeadTags(config: DocusiteConfig, hostname: string): HeadTag[] {
+  const siteRoot = hostname.replace(/\/$/, '')
+  const siteUrl = `${siteRoot}/`
+  const siteTitle = config.title || 'Documentation'
+  const siteDescription =
+    config.description || `${siteTitle} documentation website`
+  const locale = config.locales?.root?.lang ?? 'en'
+
+  const tags: HeadTag[] = [
+    ['link', { rel: 'canonical', href: siteUrl }],
+    ['meta', { property: 'og:title', content: siteTitle }],
+    ['meta', { property: 'og:description', content: siteDescription }],
+    ['meta', { property: 'og:type', content: 'article' }],
+    ['meta', { property: 'og:url', content: siteUrl }],
+    ['meta', { property: 'og:locale', content: locale }],
+    ['meta', { property: 'og:site_name', content: siteTitle }],
+    ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:site', content: siteTitle }],
+    ['meta', { name: 'twitter:title', content: siteTitle }],
+    ['meta', { name: 'twitter:description', content: siteDescription }],
+  ]
+
+  if (config.logos?.banner) {
+    const siteBannerUrl = `${siteRoot}${resolvePublicAssetPath(config.logos.banner)}`
+    const imageAlt = `${siteTitle} logo`
+    tags.push(
+      ['meta', { property: 'og:image', content: siteBannerUrl }],
+      ['meta', { property: 'og:image:alt', content: imageAlt }],
+      ['meta', { name: 'twitter:image', content: siteBannerUrl }],
+      ['meta', { name: 'twitter:image:alt', content: imageAlt }],
+    )
+  }
+
+  return tags
+}
+
+/** Append head tags, skipping ones the user already provided. */
+function appendHeadTags(head: NonNullable<UserConfig['head']>, tags: HeadTag[]): void {
+  for (const tag of tags) {
+    if (hasMatchingHeadTag(head, tag)) continue
+    head.push(tag)
+  }
+}
+
+function hasMatchingHeadTag(head: NonNullable<UserConfig['head']>, tag: HeadTag): boolean {
+  if (!Array.isArray(tag)) return false
+  const [name, attrs] = tag
+  if (!attrs || typeof attrs !== 'object') return false
+
+  if (name === 'link' && 'rel' in attrs) {
+    return head.some((existing) => {
+      if (!Array.isArray(existing) || existing[0] !== 'link') return false
+      return (existing[1] as Record<string, string>).rel === (attrs as Record<string, string>).rel
+    })
+  }
+
+  if (name === 'meta') {
+    const key = 'property' in attrs ? 'property' : 'name' in attrs ? 'name' : undefined
+    if (!key) return false
+    const value = (attrs as Record<string, string>)[key]
+    return head.some((existing) => {
+      if (!Array.isArray(existing) || existing[0] !== 'meta') return false
+      return (existing[1] as Record<string, string>)[key] === value
+    })
+  }
+
+  return false
 }
 
 // ---------------------------------------------------------------------------
