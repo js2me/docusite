@@ -1,5 +1,12 @@
 # docusite
 
+## 0.1.3
+
+### Patch Changes
+
+- 47015e5: improve styles for outline link
+- 11af984: brand gradient for title on page"
+
 ## 0.1.2
 
 ### Patch Changes
