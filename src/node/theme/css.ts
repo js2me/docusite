@@ -139,9 +139,14 @@ export function generateBaseCSS(): string {
 .VPNav { box-shadow: none !important; border-bottom: none !important; }
 
 /* Blur content only — full-bar backdrop softens the sidebar edge. */
-.VPNavBar .content-body {
+.VPNavBar .content-body,
+.VPLocalNav {
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
+}
+
+.VPLocalNav {
+  border-bottom: none !important;
 }
 
 /* Logo left of site title; VitePress default gap is 8px */
@@ -151,17 +156,66 @@ export function generateBaseCSS(): string {
 
 :root {
   --vp-nav-bg-color: #ffffff00;
+  --vp-local-nav-bg-color: #ffffff00;
+  --vp-sidebar-bg-color: #ebebeb6e;
 }
 html.dark {
   --vp-nav-bg-color: #11111100;
+  --vp-local-nav-bg-color: #11111100;
+  --vp-sidebar-bg-color: #1616186e;
+}
+
+/* Mobile drawer: more opaque so content behind stays readable. */
+@media (max-width: 959px) {
+  :root {
+    --vp-sidebar-bg-color: #ebebeb;
+  }
+  html.dark {
+    --vp-sidebar-bg-color: #161618c4;
+  }
 }
 
 .VPSidebar {
   scrollbar-width: thin;
+  scrollbar-color: var(--vp-c-text-3) transparent;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.VPSidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.VPSidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.VPSidebar::-webkit-scrollbar-thumb {
+  background-color: var(--vp-c-text-3);
+  border-radius: 4px;
+}
+
+.VPSidebar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--vp-c-text-2);
+}
+
+/* Logo strip: no extra paint — sidebar bg alone is enough. */
+.VPSidebar .curtain {
+  background-color: transparent !important;
+}
+
+.Layout .VPNavBar .title {
+  background: transparent !important;
 }
 
 .Layout .title {
   transition: background-color 0s;
+}
+
+/* UnoCSS .outline utility clashes with VitePress TOC class. */
+.VPLocalNavOutlineDropdown .outline,
+.VPDocAsideOutline .outline {
+  outline: none;
 }
 
 .Layout .outline-link:hover, .Layout .outline-link.active {
@@ -196,7 +250,6 @@ html.dark {
     padding: 0 32px;
     width: var(--vp-sidebar-width);
     height: var(--vp-nav-height);
-    background: var(--vp-sidebar-bg-color);
   }
 
   .Layout:has(#VPContent.has-sidebar) .VPNavBar:not(.has-sidebar) .content {
@@ -204,10 +257,6 @@ html.dark {
     z-index: 1;
     padding-left: var(--vp-sidebar-width);
     padding-right: 32px;
-  }
-
-  .Layout .VPNavBar.has-sidebar .title {
-    background: var(--vp-sidebar-bg-color);
   }
 }
 
