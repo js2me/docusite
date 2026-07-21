@@ -8,7 +8,7 @@
  *   --vp-button-brand-*-bg      = remapped so buttons brighten on hover/active
  *   --vp-c-brand-soft/dark/dimm = derived from the base color
  *
- * Gradient (hero title / logo glow):
+ * Gradient (hero title / logo glow / doc page h1):
  *   single color  → same as brand-1/2/3
  *   3-color tuple → --docusite-c-gradient-1/2/3 = the provided colors
  */
@@ -341,6 +341,31 @@ html.dark {
 
 .VPContent.is-home {
   display: flex;
+}
+
+/* ── Doc page: soft brand gradient behind title ── */
+.VPDoc .vp-doc h1:first-of-type {
+  position: relative;
+  isolation: isolate;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.VPDoc .vp-doc h1:first-of-type::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -1.25em -1.5em;
+  background: linear-gradient(-45deg, var(--docusite-c-gradient-1) 33%, var(--docusite-c-gradient-2) 33% 66%, var(--docusite-c-gradient-3) 66%);
+  filter: blur(72px);
+  opacity: 0.32;
+  border-radius: 40%;
+  pointer-events: none;
+  transform: translateY(8px) translateX(-17px);
+}
+
+html.dark .VPDoc .vp-doc h1:first-of-type::before {
+  opacity: 0.26;
 }
 
 /* ── Doc page: center content when no sidebar ── */
