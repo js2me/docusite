@@ -164,6 +164,12 @@ html.dark {
   transition: background-color 0s;
 }
 
+.Layout .outline-link:hover, .Layout .outline-link.active {
+  color: var(--vp-c-brand-1);
+  transition: color 0.25s, font-weight 0.15s ease;
+  font-weight: 600;
+}
+
 .Layout .aside-container {
   max-width: 480px;
   width: auto;
