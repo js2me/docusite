@@ -1,6 +1,6 @@
 {
   "name": "docusite",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Dead-simple documentation tool powered by VitePress",
   "type": "module",
   "bin": {
