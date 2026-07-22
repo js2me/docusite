@@ -1,5 +1,11 @@
 # docusite
 
+## 0.1.6
+
+### Patch Changes
+
+- 9e2e47f: better active scroll detects for outline\sidebar elements"
+
 ## 0.1.5
 
 ### Patch Changes
