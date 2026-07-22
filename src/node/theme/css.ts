@@ -206,10 +206,25 @@ html.dark {
 
 .Layout .VPNavBar .title {
   background: transparent !important;
+  transition: background-color 0s;
+  border-bottom-color: transparent !important;
 }
 
-.Layout .title {
-  transition: background-color 0s;
+.VPNavBarTitle .title {
+  position: relative;
+}
+
+.VPNavBarTitle a.title::before {
+  content: '';
+  position: absolute;
+  left: -0.5em;
+  right: 0;
+  top: 0;
+  bottom: 1em;
+  backdrop-filter: blur(6px);
+  z-index: -1;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
 }
 
 /* UnoCSS .outline utility clashes with VitePress TOC class. */
