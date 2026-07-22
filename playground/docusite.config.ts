@@ -48,6 +48,11 @@ export default defineConfig({
         items: [
           { text: 'Getting Started', link: '/introduction/getting-started' },
           { text: 'Markdown Examples', link: '/introduction/markdown-examples' },
+          { text: 'Long Outline', link: '/introduction/long-outline' },
+          ...Array.from({ length: 40 }, (_, i) => {
+            const n = String(i + 1).padStart(2, '0')
+            return { text: `Section ${i + 1}`, link: `/introduction/section-${n}` }
+          }),
         ],
       },
       {

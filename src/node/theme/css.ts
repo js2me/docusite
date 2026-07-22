@@ -204,6 +204,32 @@ html.dark {
   background-color: transparent !important;
 }
 
+/* Active sidebar item highlight */
+.VPSidebarItem {
+  position: relative;
+  transition: all 250ms ease;
+}
+
+.VPSidebarItem::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  transition: all 250ms ease;
+}
+
+.VPSidebarItem.is-active::before {
+  background: #ffffffc2;
+  right: -50px;
+  left: -12px;
+}
+
+html.dark .VPSidebarItem.is-active::before {
+  background: #1d1d24;
+}
+
 .Layout .VPNavBar .title {
   background: transparent !important;
   transition: background-color 0s;
@@ -243,6 +269,15 @@ html.dark {
   max-width: 480px;
   width: auto;
   min-width: 224px;
+}
+
+/*
+ * Fallback so last-but-one headings can reach the scroll-spy line (VitePress
+ * isBottom otherwise steals the active outline item). JS in
+ * outline-active-scroll.ts replaces this with the minimum needed pad (<=70vh).
+ */
+.VPDoc .content-container {
+  padding-bottom: 20vh;
 }
 
 /* VitePress 1.x: VPNavBar.has-sidebar appears only after hydration → search CLS.

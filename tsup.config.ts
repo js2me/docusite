@@ -29,4 +29,16 @@ export default defineConfig([
     },
     clean: false,
   },
+  // Client theme helpers copied into docs/.vitepress/theme/ at generate time
+  {
+    entry: [
+      'src/node/theme/outline-active-scroll.ts',
+      'src/node/theme/sidebar-active-scroll.ts',
+    ],
+    outDir: 'dist/node/theme',
+    format: ['esm'],
+    target: 'es2020',
+    dts: false,
+    clean: false,
+  },
 ])

@@ -285,6 +285,17 @@ function writeThemeFiles(vpxDir: string, versions?: DocusiteVersions, versionsLa
     console.warn(`[docusite] ReactMark.vue not found at ${srcReactMark}`)
   }
 
+  // Client helpers: scroll TOC / sidebar panes to the active item
+  for (const name of ['outline-active-scroll', 'sidebar-active-scroll'] as const) {
+    const src = resolve(docusiteDistDir, `node/theme/${name}.js`)
+    const dst = resolve(themeDir, `${name}.js`)
+    if (existsSync(src)) {
+      copyFileSync(src, dst)
+    } else {
+      console.warn(`[docusite] ${name}.js not found at ${src}`)
+    }
+  }
+
   // Copy NavVersionsFlyout.vue + OldVersionBanner.vue when versioning is enabled
   if (versions) {
     const srcFlyout = resolve(docusiteDistDir, 'node/theme/components/NavVersionsFlyout.vue')
@@ -313,6 +324,8 @@ function buildThemeIndexContent(versions?: DocusiteVersions, versionsLatestLink?
   const imports: string[] = [
     `import DefaultTheme from 'vitepress/theme'`,
     `import ReactMark from './components/ReactMark.vue'`,
+    `import { setupOutlineActiveScroll } from './outline-active-scroll.js'`,
+    `import { setupSidebarActiveScroll } from './sidebar-active-scroll.js'`,
     `import 'uno.css'`,
   ]
   const components: string[] = [
@@ -355,7 +368,9 @@ function buildThemeIndexContent(versions?: DocusiteVersions, versionsLatestLink?
       e.preventDefault()
       btn.click()
     })`
-  const clientBody = [searchHotkeyFix, runtimeBody].filter(Boolean).join('\n\n    ')
+  const outlineActiveScroll = `setupOutlineActiveScroll(router)`
+  const sidebarActiveScroll = `setupSidebarActiveScroll(router)`
+  const clientBody = [searchHotkeyFix, outlineActiveScroll, sidebarActiveScroll, runtimeBody].filter(Boolean).join('\n\n    ')
   const runtimeBlock = `\n\n    if (!import.meta.env.SSR) {\n      ${clientBody}\n    }`
 
   return `${imports.join('\n')}
@@ -363,7 +378,7 @@ ${versions ? `import { h } from 'vue'` : ''}
 
 export default {
   extends: DefaultTheme,
-  enhanceApp({ app }) {
+  enhanceApp({ app, router }) {
     ${enhanceAppBody}${runtimeBlock}
   },${versions ? `
   Layout() {
