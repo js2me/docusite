@@ -1,5 +1,12 @@
 # docusite
 
+## 0.1.7
+
+### Patch Changes
+
+- ff15a26: more marks for for docusite
+- 37480fb: i18n + versioning fix
+
 ## 0.1.6
 
 ### Patch Changes
