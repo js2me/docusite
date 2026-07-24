@@ -516,35 +516,47 @@ html .VPFooter {
   border-top: 0 !important;
 }
 
-/* ── ReactMark: inline in prose/headings ── */
-.vp-inline-react-mark {
+/* ── ReactMark / SolidMark / VueMark: inline in prose/headings ── */
+.vp-inline-react-mark,
+.vp-inline-solid-mark,
+.vp-inline-vue-mark {
   display: inline-block;
   vertical-align: -0.185em;
   margin-right: 0.2em;
 }
 
-.vp-inline-react-mark svg {
+.vp-inline-react-mark svg,
+.vp-inline-solid-mark svg,
+.vp-inline-vue-mark svg {
   display: block;
   width: 1em;
   height: 1em;
 }
 
-/* ── ReactMark: sidebar (from transformed HTML text) ── */
-.vp-sidebar-react-mark {
+/* ── ReactMark / SolidMark / VueMark: sidebar (from transformed HTML text) ── */
+.vp-sidebar-react-mark,
+.vp-sidebar-solid-mark,
+.vp-sidebar-vue-mark {
   display: inline;
 }
 
-.vp-sidebar-react-icon {
+.vp-sidebar-react-icon,
+.vp-sidebar-solid-icon,
+.vp-sidebar-vue-icon {
   display: inline-block;
   vertical-align: -0.2em;
 }
 
-.vp-sidebar-react-mark .vp-sidebar-react-icon {
+.vp-sidebar-react-mark .vp-sidebar-react-icon,
+.vp-sidebar-solid-mark .vp-sidebar-solid-icon,
+.vp-sidebar-vue-mark .vp-sidebar-vue-icon {
   width: 1.05em;
   height: 1.05em;
 }
 
-html:not(.dark) .vp-sidebar-react-icon {
+html:not(.dark) .vp-sidebar-react-icon,
+html:not(.dark) .vp-sidebar-solid-icon,
+html:not(.dark) .vp-sidebar-vue-icon {
   filter: brightness(0.88) saturate(1.05);
 }
 `.trim()

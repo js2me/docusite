@@ -36,6 +36,8 @@ export default defineConfig({
           { text: 'Подстановка контента', link: '/guide/content-injections' },
           { text: 'Клиентские скрипты', link: '/guide/runtime-scripts' },
           { text: '<ReactMark /> ReactMark', link: '/guide/react-mark' },
+          { text: '<SolidMark /> SolidMark', link: '/guide/solid-mark' },
+          { text: '<VueMark /> VueMark', link: '/guide/vue-mark' },
           { text: 'Интернационализация', link: '/guide/i18n' },
           { text: 'Пользовательский CSS', link: '/guide/custom-css' },
           { text: 'Прямой доступ к VitePress', link: '/guide/escape-hatches' },

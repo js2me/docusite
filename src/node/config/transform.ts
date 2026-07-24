@@ -1,28 +1,42 @@
 import type { UserConfig, DefaultTheme } from 'vitepress'
 import type { DocusiteConfig, DocusiteContentInjection, DocusiteLocale, DocusiteNav, DocusiteSearch, DocusiteSitemapOptions, DocusiteVersions } from '../../shared/types.js'
 import { prepareContentInjections } from './content-injections.js'
+import { detectFrameworkMarksInMarkdown, type FrameworkMarkName } from './framework-marks.js'
 import { resolveRuntimeScriptCode } from './runtime-script.js'
 import { generateBrandCSS, generateBaseCSS } from '../theme/css.js'
 
 // ---------------------------------------------------------------------------
-// ReactMark SVG (shared between component and sidebar text transform)
+// Framework mark SVGs (shared between components and sidebar text transform)
 // ---------------------------------------------------------------------------
 
 const REACT_LOGO_SVG = '<svg class="vp-sidebar-react-icon" xmlns="http://www.w3.org/2000/svg" viewBox="-11.5 -10.23174 23 20.46348" aria-hidden="true"><circle cx="0" cy="0" r="2.05" fill="#61dafb"/><g stroke="#61dafb" stroke-width="1" fill="none"><ellipse rx="11" ry="4.2"/><ellipse rx="11" ry="4.2" transform="rotate(60)"/><ellipse rx="11" ry="4.2" transform="rotate(120)"/></g></svg>'
 
-/** Replace `<ReactMark />` placeholder in text with inline SVG HTML */
-function replaceReactMark(text: string): string {
-  return text.replace(
-    /<ReactMark\s*\/>/g,
-    `<span class="vp-sidebar-react-mark">${REACT_LOGO_SVG}</span>`,
-  )
+const SOLID_LOGO_SVG = '<svg class="vp-sidebar-solid-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 166 155.3" aria-hidden="true"><defs><linearGradient id="solid-a" gradientUnits="userSpaceOnUse" x1="27.5" y1="3" x2="152" y2="63.5"><stop offset=".1" stop-color="#76b3e1"/><stop offset=".3" stop-color="#dcf2fd"/><stop offset="1" stop-color="#76b3e1"/></linearGradient><linearGradient id="solid-b" gradientUnits="userSpaceOnUse" x1="95.8" y1="32.6" x2="74" y2="105.2"><stop offset="0" stop-color="#76b3e1"/><stop offset=".5" stop-color="#4377bb"/><stop offset="1" stop-color="#1f3b77"/></linearGradient><linearGradient id="solid-c" gradientUnits="userSpaceOnUse" x1="18.4" y1="64.2" x2="144.3" y2="149.8"><stop offset="0" stop-color="#315aa9"/><stop offset=".5" stop-color="#518ac8"/><stop offset="1" stop-color="#315aa9"/></linearGradient><linearGradient id="solid-d" gradientUnits="userSpaceOnUse" x1="75.2" y1="74.5" x2="24.4" y2="260.8"><stop offset="0" stop-color="#4377bb"/><stop offset=".5" stop-color="#1a336b"/><stop offset="1" stop-color="#1a336b"/></linearGradient></defs><path d="M163 35S110-4 69 5l-3 1c-6 2-11 5-14 9l-2 3-15 26 26 5c11 7 25 10 38 7l46 9 18-30z" fill="#76b3e1"/><path d="M163 35S110-4 69 5l-3 1c-6 2-11 5-14 9l-2 3-15 26 26 5c11 7 25 10 38 7l46 9 18-30z" opacity=".3" fill="url(#solid-a)"/><path d="M52 35l-4 1c-17 5-22 21-13 35 10 13 31 20 48 15l62-21S92 26 52 35z" fill="#518ac8"/><path d="M52 35l-4 1c-17 5-22 21-13 35 10 13 31 20 48 15l62-21S92 26 52 35z" opacity=".3" fill="url(#solid-b)"/><path d="M134 80a45 45 0 00-48-15L24 85 4 120l112 19 20-36c4-7 3-15-2-23z" fill="url(#solid-c)"/><path d="M114 115a45 45 0 00-48-15L4 120s53 40 94 30l3-1c17-5 23-21 13-34z" fill="url(#solid-d)"/></svg>'
+
+const VUE_LOGO_SVG = '<svg class="vp-sidebar-vue-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 261.76 226.69" aria-hidden="true"><path d="M161.096.001l-30.225 52.351L100.647.001H-.005l130.877 226.688L261.749.001z" fill="#41b883"/><path d="M161.096.001l-30.225 52.351L100.647.001H52.346l78.532 136.01L209.409.001z" fill="#35495e"/></svg>'
+
+/** Replace framework mark placeholders in text with inline SVG HTML */
+function replaceFrameworkMarks(text: string): string {
+  return text
+    .replace(
+      /<ReactMark\s*\/>/g,
+      `<span class="vp-sidebar-react-mark">${REACT_LOGO_SVG}</span>`,
+    )
+    .replace(
+      /<SolidMark\s*\/>/g,
+      `<span class="vp-sidebar-solid-mark">${SOLID_LOGO_SVG}</span>`,
+    )
+    .replace(
+      /<VueMark\s*\/>/g,
+      `<span class="vp-sidebar-vue-mark">${VUE_LOGO_SVG}</span>`,
+    )
 }
 
-/** Recursively walk nav items and transform `<ReactMark />` in text fields */
+/** Recursively walk nav items and transform framework marks in text fields */
 function transformNav(items: DefaultTheme.NavItem[]): void {
   for (const item of items) {
     if ('text' in item && typeof item.text === 'string') {
-      item.text = replaceReactMark(item.text)
+      item.text = replaceFrameworkMarks(item.text)
     }
     if ('items' in item && Array.isArray(item.items)) {
       transformNav(item.items as DefaultTheme.NavItem[])
@@ -30,7 +44,7 @@ function transformNav(items: DefaultTheme.NavItem[]): void {
   }
 }
 
-/** Recursively walk sidebar items and transform `<ReactMark />` in text fields */
+/** Recursively walk sidebar items and transform framework marks in text fields */
 function transformSidebar(sidebar: DefaultTheme.Sidebar): void {
   if (Array.isArray(sidebar)) {
     transformSidebarGroups(sidebar)
@@ -44,7 +58,7 @@ function transformSidebar(sidebar: DefaultTheme.Sidebar): void {
 function transformSidebarGroups(groups: DefaultTheme.SidebarItem[]): void {
   for (const group of groups) {
     if ('text' in group && typeof group.text === 'string') {
-      group.text = replaceReactMark(group.text)
+      group.text = replaceFrameworkMarks(group.text)
     }
     if ('items' in group && Array.isArray(group.items)) {
       transformSidebarGroups(group.items as DefaultTheme.SidebarItem[])
@@ -64,6 +78,8 @@ export interface TransformResult {
   contentInjections?: DocusiteContentInjection[]
   runtimeScriptCode?: string
   hasPathKeyedNav?: boolean
+  /** Framework mark Vue components used live in markdown (not nav/sidebar placeholders). */
+  frameworkMarks?: FrameworkMarkName[]
 }
 
 export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = process.cwd()): TransformResult {
@@ -291,6 +307,7 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
     contentInjections,
     runtimeScriptCode: resolveRuntimeScriptCode(config.runtimeScript, cwd, docsDir),
     hasPathKeyedNav,
+    frameworkMarks: detectFrameworkMarksInMarkdown(docsDir),
   }
 }
 

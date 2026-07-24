@@ -1,8 +1,9 @@
-import { mkdirSync, existsSync, readFileSync, writeFileSync, copyFileSync } from 'node:fs'
+import { mkdirSync, existsSync, readFileSync, writeFileSync, copyFileSync, unlinkSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { UserConfig, DefaultTheme } from 'vitepress'
 import type { DocusiteLlmsOptions, DocusiteContentInjection, DocusiteSourceLinks, DocusiteVersions } from '../../shared/types.js'
+import { FRAMEWORK_MARKS, type FrameworkMarkName } from '../config/framework-marks.js'
 
 // Resolve the real path to vitepress-plugin-llms from within docusite's installation
 const llmsPluginDir = dirname(
@@ -229,6 +230,8 @@ export interface WriteOptions {
   contentInjections?: DocusiteContentInjection[]
   runtimeScriptCode?: string
   hasPathKeyedNav?: boolean
+  /** Framework mark Vue components to register (detected from live markdown usage). */
+  frameworkMarks?: FrameworkMarkName[]
 }
 
 /**
@@ -249,8 +252,14 @@ export function writeVitePressConfig(
   const content = serializeConfig(config)
   writeFileSync(configPath, content, 'utf-8')
 
-  // Always write theme files (ReactMark + optional NavVersionsFlyout)
-  writeThemeFiles(vpxDir, options.versions, options.versionsLatestLink, options.runtimeScriptCode)
+  // Write theme files (on-demand framework marks + optional NavVersionsFlyout)
+  writeThemeFiles(
+    vpxDir,
+    options.versions,
+    options.versionsLatestLink,
+    options.runtimeScriptCode,
+    options.frameworkMarks ?? [],
+  )
 
   // Copy changelog source file into docs dir
   if (options.changelogSrc) {
@@ -268,21 +277,34 @@ export function writeVitePressConfig(
 }
 
 // ---------------------------------------------------------------------------
-// Theme files (ReactMark + optional NavVersionsFlyout)
+// Theme files (on-demand framework marks + optional NavVersionsFlyout)
 // ---------------------------------------------------------------------------
 
-function writeThemeFiles(vpxDir: string, versions?: DocusiteVersions, versionsLatestLink?: string, runtimeScriptCode?: string): void {
+function writeThemeFiles(
+  vpxDir: string,
+  versions?: DocusiteVersions,
+  versionsLatestLink?: string,
+  runtimeScriptCode?: string,
+  frameworkMarks: FrameworkMarkName[] = [],
+): void {
   const themeDir = resolve(vpxDir, 'theme')
   const componentsDir = resolve(themeDir, 'components')
   mkdirSync(componentsDir, { recursive: true })
 
-  // Always copy ReactMark.vue
-  const srcReactMark = resolve(docusiteDistDir, 'node/theme/components/ReactMark.vue')
-  const dstReactMark = resolve(componentsDir, 'ReactMark.vue')
-  if (existsSync(srcReactMark)) {
-    copyFileSync(srcReactMark, dstReactMark)
-  } else {
-    console.warn(`[docusite] ReactMark.vue not found at ${srcReactMark}`)
+  // Copy only framework mark components that are used live in markdown
+  const usedMarks = new Set(frameworkMarks)
+  for (const name of FRAMEWORK_MARKS) {
+    const dst = resolve(componentsDir, `${name}.vue`)
+    if (usedMarks.has(name)) {
+      const src = resolve(docusiteDistDir, `node/theme/components/${name}.vue`)
+      if (existsSync(src)) {
+        copyFileSync(src, dst)
+      } else {
+        console.warn(`[docusite] ${name}.vue not found at ${src}`)
+      }
+    } else if (existsSync(dst)) {
+      unlinkSync(dst)
+    }
   }
 
   // Client helpers: scroll TOC / sidebar panes to the active item
@@ -317,20 +339,25 @@ function writeThemeFiles(vpxDir: string, versions?: DocusiteVersions, versionsLa
 
   // Write theme/index.ts with the required component registrations
   const themeIndex = resolve(themeDir, 'index.ts')
-  writeFileSync(themeIndex, buildThemeIndexContent(versions, versionsLatestLink, runtimeScriptCode), 'utf-8')
+  writeFileSync(themeIndex, buildThemeIndexContent(versions, versionsLatestLink, runtimeScriptCode, frameworkMarks), 'utf-8')
 }
 
-function buildThemeIndexContent(versions?: DocusiteVersions, versionsLatestLink?: string, runtimeScriptCode?: string): string {
+function buildThemeIndexContent(
+  versions?: DocusiteVersions,
+  versionsLatestLink?: string,
+  runtimeScriptCode?: string,
+  frameworkMarks: FrameworkMarkName[] = [],
+): string {
   const imports: string[] = [
     `import DefaultTheme from 'vitepress/theme'`,
-    `import ReactMark from './components/ReactMark.vue'`,
+    ...frameworkMarks.map((name) => `import ${name} from './components/${name}.vue'`),
     `import { setupOutlineActiveScroll } from './outline-active-scroll.js'`,
     `import { setupSidebarActiveScroll } from './sidebar-active-scroll.js'`,
     `import 'uno.css'`,
   ]
-  const components: string[] = [
-    `app.component('ReactMark', ReactMark)`,
-  ]
+  const components: string[] = frameworkMarks.map(
+    (name) => `app.component('${name}', ${name})`,
+  )
 
   if (versions) {
     imports.push(`import NavVersionsFlyout from './components/NavVersionsFlyout.vue'`)

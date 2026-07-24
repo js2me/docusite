@@ -35,6 +35,7 @@ export async function dev(root?: string, port?: number) {
     contentInjections: result.contentInjections,
     runtimeScriptCode: result.runtimeScriptCode,
     hasPathKeyedNav: result.hasPathKeyedNav,
+    frameworkMarks: result.frameworkMarks,
   })
 
   // Start VitePress dev server
@@ -63,6 +64,7 @@ export async function dev(root?: string, port?: number) {
             changelogSrc: newResult.changelogSrc,
             contentInjections: newResult.contentInjections,
             runtimeScriptCode: newResult.runtimeScriptCode,
+            frameworkMarks: newResult.frameworkMarks,
           })
         } catch (e: any) {
           console.error(`[docusite] Config reload failed: ${e.message}`)

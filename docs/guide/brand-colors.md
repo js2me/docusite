@@ -78,4 +78,4 @@ colors: {
 - **Кнопка бренда** — эффект свечения (box-shadow)
 - **Карточки фич** — стеклянный эффект (glassmorphism) с `backdrop-filter: blur(10px)` и стили для Iconify-иконок
 - **Макет** — флексбокс для заполнения страницы, центрирование контента без сайдбара
-- **ReactMark** — стили для инлайн-иконки React
+- **ReactMark / SolidMark / VueMark** — стили для инлайн-иконок React, Solid и Vue
