@@ -25,6 +25,8 @@ export default defineConfig([
     entry: [
       'src/node/theme/components/NavVersionsFlyout.vue',
       'src/node/theme/components/OldVersionBanner.vue',
+      'src/node/theme/components/NavBarTranslations.vue',
+      'src/node/theme/components/NavScreenTranslations.vue',
       'src/node/theme/components/ReactMark.vue',
       'src/node/theme/components/SolidMark.vue',
       'src/node/theme/components/VueMark.vue',
@@ -40,11 +42,16 @@ export default defineConfig([
     entry: [
       'src/node/theme/outline-active-scroll.ts',
       'src/node/theme/sidebar-active-scroll.ts',
+      'src/node/theme/version-locale.ts',
+      'src/node/theme/docusite-langs.ts',
     ],
     outDir: 'dist/node/theme',
     format: ['esm'],
     target: 'es2020',
     dts: false,
     clean: false,
+    splitting: false,
+    // Keep VitePress as external — these modules run in the VitePress client bundle
+    external: ['vue', 'vitepress'],
   },
 ])

@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { useData } from 'vitepress'
 import { computed } from 'vue'
+import {
+  isOldVersionPath,
+  parseDocPath,
+  withLocalePrefix,
+} from '../version-locale.js'
 
 const props = defineProps<{
   latestLabel: string
@@ -9,21 +14,26 @@ const props = defineProps<{
   message?: string
 }>()
 
-const { page } = useData()
+const { page, site } = useData()
 
-const isOldVersion = computed(() => {
-  const rel = page.value.relativePath
-  for (const v of props.olderVersions ?? []) {
-    const match = v.link.match(/^\/(v\d+)\//)
-    if (match && rel.startsWith(match[1] + '/')) return true
-  }
-  return false
-})
+const localeKeys = computed(() => Object.keys(site.value.locales ?? {}))
+
+const localePrefix = computed(() =>
+  parseDocPath(page.value.relativePath, localeKeys.value).localePrefix,
+)
+
+const localizedLatestLink = computed(() =>
+  withLocalePrefix(props.latestLink, localePrefix.value),
+)
+
+const isOldVersion = computed(() =>
+  isOldVersionPath(page.value.relativePath, props.olderVersions),
+)
 
 const bannerMessage = computed(() => {
   if (props.message) {
     return props.message
-      .replace(/\{latestLink\}/g, props.latestLink)
+      .replace(/\{latestLink\}/g, localizedLatestLink.value)
       .replace(/\{latestLabel\}/g, props.latestLabel)
   }
   return `You are viewing an older version. Switch to the latest version (${props.latestLabel}).`
@@ -34,7 +44,7 @@ const bannerMessage = computed(() => {
   <div v-if="isOldVersion" class="docusite-old-version-banner">
     <span class="icon">⚠️</span>
     <span class="text">{{ bannerMessage }}</span>
-    <a :href="latestLink" class="link">View latest →</a>
+    <a :href="localizedLatestLink" class="link">View latest →</a>
   </div>
 </template>
 

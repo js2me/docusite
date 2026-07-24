@@ -11,6 +11,17 @@ export default defineConfig({
     light: ['#646cff', '#ff6466', '#21ffc7'],
     dark: ['#535bf2', '#ff6466', '#21ffc7'],
   },
+  locales: {
+    root: {
+      label: 'English',
+      lang: 'en',
+    },
+    ru: {
+      label: 'Русский',
+      lang: 'ru',
+      link: '/ru/',
+    },
+  },
   nav: {
     '/': [
       { text: 'Guide', link: '/introduction/getting-started' },
@@ -21,27 +32,20 @@ export default defineConfig({
       { text: 'API', link: '/v1/api/overview' },
       { text: 'Examples', link: '/v1/introduction/markdown-examples' },
     ],
+    '/ru/': [
+      { text: 'Гайд', link: '/ru/introduction/getting-started' },
+      { text: 'API', link: '/ru/api/overview' },
+    ],
+    '/ru/v1/': [
+      { text: 'Гайд', link: '/ru/v1/introduction/getting-started' },
+      { text: 'API', link: '/ru/v1/api/overview' },
+      { text: 'Примеры', link: '/ru/v1/introduction/markdown-examples' },
+    ],
   },
   runtimeScript: () => {
     console.log('runtime script!');
   },
   sidebar: {
-    '/v1/': [
-      {
-        text: 'Introduction',
-        items: [
-          { text: 'Getting Started', link: '/v1/introduction/getting-started' },
-          { text: 'Markdown Examples', link: '/v1/introduction/markdown-examples' },
-        ],
-      },
-      {
-        text: 'API Reference',
-        items: [
-          { text: 'Overview', link: '/v1/api/overview' },
-          { text: '<ReactMark /> Hooks', link: '/v1/api/react-hooks' },
-        ],
-      },
-    ],
     '/': [
       {
         text: 'Introduction',
@@ -63,6 +67,54 @@ export default defineConfig({
         ],
       },
     ],
+    '/v1/': [
+      {
+        text: 'Introduction',
+        items: [
+          { text: 'Getting Started', link: '/v1/introduction/getting-started' },
+          { text: 'Markdown Examples', link: '/v1/introduction/markdown-examples' },
+        ],
+      },
+      {
+        text: 'API Reference',
+        items: [
+          { text: 'Overview', link: '/v1/api/overview' },
+          { text: '<ReactMark /> Hooks', link: '/v1/api/react-hooks' },
+        ],
+      },
+    ],
+    '/ru/': [
+      {
+        text: 'Введение',
+        items: [
+          { text: 'Быстрый старт', link: '/ru/introduction/getting-started' },
+          { text: 'Примеры Markdown', link: '/ru/introduction/markdown-examples' },
+        ],
+      },
+      {
+        text: 'Справочник API',
+        items: [
+          { text: 'Обзор', link: '/ru/api/overview' },
+          { text: '<ReactMark /> Хуки', link: '/ru/api/react-hooks' },
+        ],
+      },
+    ],
+    '/ru/v1/': [
+      {
+        text: 'Введение',
+        items: [
+          { text: 'Быстрый старт', link: '/ru/v1/introduction/getting-started' },
+          { text: 'Примеры Markdown', link: '/ru/v1/introduction/markdown-examples' },
+        ],
+      },
+      {
+        text: 'Справочник API',
+        items: [
+          { text: 'Обзор', link: '/ru/v1/api/overview' },
+          { text: '<ReactMark /> Хуки', link: '/ru/v1/api/react-hooks' },
+        ],
+      },
+    ],
   },
   changelog: { src: 'CHANGELOG.md' },
   search: 'local',
@@ -73,7 +125,7 @@ export default defineConfig({
       { label: 'v1.x.x', link: '/v1/introduction/getting-started' },
     ],
     oldVersionBanner: {
-      message: 'message',
+      message: 'You are viewing an older version. Switch to {latestLabel}.',
       show: true,
     }
   },

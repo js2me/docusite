@@ -230,6 +230,8 @@ export interface WriteOptions {
   contentInjections?: DocusiteContentInjection[]
   runtimeScriptCode?: string
   hasPathKeyedNav?: boolean
+  /** Real i18n locales configured — enables version-aware language switcher. */
+  hasI18n?: boolean
   /** Framework mark Vue components to register (detected from live markdown usage). */
   frameworkMarks?: FrameworkMarkName[]
 }
@@ -259,6 +261,7 @@ export function writeVitePressConfig(
     options.versionsLatestLink,
     options.runtimeScriptCode,
     options.frameworkMarks ?? [],
+    options.hasI18n ?? false,
   )
 
   // Copy changelog source file into docs dir
@@ -286,6 +289,7 @@ function writeThemeFiles(
   versionsLatestLink?: string,
   runtimeScriptCode?: string,
   frameworkMarks: FrameworkMarkName[] = [],
+  hasI18n = false,
 ): void {
   const themeDir = resolve(vpxDir, 'theme')
   const componentsDir = resolve(themeDir, 'components')
@@ -307,8 +311,13 @@ function writeThemeFiles(
     }
   }
 
-  // Client helpers: scroll TOC / sidebar panes to the active item
-  for (const name of ['outline-active-scroll', 'sidebar-active-scroll'] as const) {
+  // Client helpers: scroll TOC / sidebar panes + version/i18n path utils
+  const themeHelpers = [
+    'outline-active-scroll',
+    'sidebar-active-scroll',
+    ...(versions || hasI18n ? ['version-locale', 'docusite-langs'] as const : []),
+  ]
+  for (const name of themeHelpers) {
     const src = resolve(docusiteDistDir, `node/theme/${name}.js`)
     const dst = resolve(themeDir, `${name}.js`)
     if (existsSync(src)) {
@@ -320,26 +329,37 @@ function writeThemeFiles(
 
   // Copy NavVersionsFlyout.vue + OldVersionBanner.vue when versioning is enabled
   if (versions) {
-    const srcFlyout = resolve(docusiteDistDir, 'node/theme/components/NavVersionsFlyout.vue')
-    const dstFlyout = resolve(componentsDir, 'NavVersionsFlyout.vue')
-    if (existsSync(srcFlyout)) {
-      copyFileSync(srcFlyout, dstFlyout)
-    } else {
-      console.warn(`[docusite] NavVersionsFlyout.vue not found at ${srcFlyout}`)
+    for (const name of ['NavVersionsFlyout', 'OldVersionBanner'] as const) {
+      const src = resolve(docusiteDistDir, `node/theme/components/${name}.vue`)
+      const dst = resolve(componentsDir, `${name}.vue`)
+      if (existsSync(src)) {
+        copyFileSync(src, dst)
+      } else {
+        console.warn(`[docusite] ${name}.vue not found at ${src}`)
+      }
     }
+  }
 
-    const srcBanner = resolve(docusiteDistDir, 'node/theme/components/OldVersionBanner.vue')
-    const dstBanner = resolve(componentsDir, 'OldVersionBanner.vue')
-    if (existsSync(srcBanner)) {
-      copyFileSync(srcBanner, dstBanner)
-    } else {
-      console.warn(`[docusite] OldVersionBanner.vue not found at ${srcBanner}`)
+  // Version-aware language switcher (replaces stock VitePress translations UI)
+  if (hasI18n) {
+    for (const name of ['NavBarTranslations', 'NavScreenTranslations'] as const) {
+      const src = resolve(docusiteDistDir, `node/theme/components/${name}.vue`)
+      const dst = resolve(componentsDir, `${name}.vue`)
+      if (existsSync(src)) {
+        copyFileSync(src, dst)
+      } else {
+        console.warn(`[docusite] ${name}.vue not found at ${src}`)
+      }
     }
   }
 
   // Write theme/index.ts with the required component registrations
   const themeIndex = resolve(themeDir, 'index.ts')
-  writeFileSync(themeIndex, buildThemeIndexContent(versions, versionsLatestLink, runtimeScriptCode, frameworkMarks), 'utf-8')
+  writeFileSync(
+    themeIndex,
+    buildThemeIndexContent(versions, versionsLatestLink, runtimeScriptCode, frameworkMarks, hasI18n),
+    'utf-8',
+  )
 }
 
 function buildThemeIndexContent(
@@ -347,6 +367,7 @@ function buildThemeIndexContent(
   versionsLatestLink?: string,
   runtimeScriptCode?: string,
   frameworkMarks: FrameworkMarkName[] = [],
+  hasI18n = false,
 ): string {
   const imports: string[] = [
     `import DefaultTheme from 'vitepress/theme'`,
@@ -364,6 +385,11 @@ function buildThemeIndexContent(
     imports.push(`import OldVersionBanner from './components/OldVersionBanner.vue'`)
     components.push(`app.component('NavVersionsFlyout', NavVersionsFlyout)`)
     components.push(`app.component('OldVersionBanner', OldVersionBanner)`)
+  }
+
+  if (hasI18n) {
+    imports.push(`import NavBarTranslations from './components/NavBarTranslations.vue'`)
+    imports.push(`import NavScreenTranslations from './components/NavScreenTranslations.vue'`)
   }
 
   imports.push(`import type { Theme } from 'vitepress'`)
@@ -400,24 +426,39 @@ function buildThemeIndexContent(
   const clientBody = [searchHotkeyFix, outlineActiveScroll, sidebarActiveScroll, runtimeBody].filter(Boolean).join('\n\n    ')
   const runtimeBlock = `\n\n    if (!import.meta.env.SSR) {\n      ${clientBody}\n    }`
 
+  const needsLayout = !!(versions || hasI18n)
+  const layoutSlots: string[] = []
+  if (versions) {
+    layoutSlots.push(`      'doc-before': () => h(OldVersionBanner, {
+        latestLabel: ${JSON.stringify(versions.latest.startsWith('v') ? versions.latest : `v${versions.latest}`)},
+        latestLink: ${JSON.stringify(versionsLatestLink || '/')},
+        olderVersions: ${JSON.stringify(versions.older ?? [])},
+        message: ${JSON.stringify(versions.oldVersionBanner?.message || '')},
+      })`)
+  }
+  if (hasI18n) {
+    // After stock translations (CSS-hidden) / social — right side of the navbar
+    layoutSlots.push(`      'nav-bar-content-after': () => h(NavBarTranslations)`)
+    layoutSlots.push(`      'nav-screen-content-after': () => h(NavScreenTranslations)`)
+  }
+
+  const layoutBlock = needsLayout
+    ? `
+  Layout() {
+    return h(DefaultTheme.Layout, null, {
+${layoutSlots.join(',\n')},
+    })
+  },`
+    : ''
+
   return `${imports.join('\n')}
-${versions ? `import { h } from 'vue'` : ''}
+${needsLayout ? `import { h } from 'vue'` : ''}
 
 export default {
   extends: DefaultTheme,
   enhanceApp({ app, router }) {
     ${enhanceAppBody}${runtimeBlock}
-  },${versions ? `
-  Layout() {
-    return h(DefaultTheme.Layout, null, {
-      'doc-before': () => h(OldVersionBanner, {
-        latestLabel: ${JSON.stringify(versions.latest.startsWith('v') ? versions.latest : `v${versions.latest}`)},
-        latestLink: ${JSON.stringify(versionsLatestLink || '/')},
-        olderVersions: ${JSON.stringify(versions.older ?? [])},
-        message: ${JSON.stringify(versions.oldVersionBanner?.message || '')},
-      }),
-    })
-  },` : ''}
+  },${layoutBlock}
 } satisfies Theme
 `
 }

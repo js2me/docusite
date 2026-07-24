@@ -35,6 +35,7 @@ export async function dev(root?: string, port?: number) {
     contentInjections: result.contentInjections,
     runtimeScriptCode: result.runtimeScriptCode,
     hasPathKeyedNav: result.hasPathKeyedNav,
+    hasI18n: result.hasI18n,
     frameworkMarks: result.frameworkMarks,
   })
 
@@ -64,6 +65,7 @@ export async function dev(root?: string, port?: number) {
             changelogSrc: newResult.changelogSrc,
             contentInjections: newResult.contentInjections,
             runtimeScriptCode: newResult.runtimeScriptCode,
+            hasI18n: newResult.hasI18n,
             frameworkMarks: newResult.frameworkMarks,
           })
         } catch (e: any) {

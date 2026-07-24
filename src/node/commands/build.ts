@@ -10,8 +10,8 @@ export async function build(root?: string) {
   const resolvedConfig = resolveConfigTemplates(config, cwd)
   const docsDir = resolve(cwd, resolvedConfig.docsDir ?? './docs')
 
-  const { config: vpConfig, versions, versionsLatestLink, changelogSrc, contentInjections, runtimeScriptCode, hasPathKeyedNav, frameworkMarks } = transformConfig(resolvedConfig, docsDir)
-  writeVitePressConfig(docsDir, vpConfig, { versions, versionsLatestLink, changelogSrc, contentInjections, runtimeScriptCode, hasPathKeyedNav, frameworkMarks })
+  const { config: vpConfig, versions, versionsLatestLink, changelogSrc, contentInjections, runtimeScriptCode, hasPathKeyedNav, hasI18n, frameworkMarks } = transformConfig(resolvedConfig, docsDir)
+  writeVitePressConfig(docsDir, vpConfig, { versions, versionsLatestLink, changelogSrc, contentInjections, runtimeScriptCode, hasPathKeyedNav, hasI18n, frameworkMarks })
 
   const { build } = await import('vitepress')
   await build(docsDir)

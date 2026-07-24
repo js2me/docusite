@@ -148,6 +148,55 @@ export default defineConfig({
 
 Docusite автоматически добавляет в навигацию кнопку с текущей версией. При нажатии открывается выпадающий список со всеми версиями. Кнопка отображает метку текущей версии — если вы находитесь на странице старой версии (например `/v1/...`), кнопка покажет `v1.x.x`, иначе — метку актуальной версии.
 
+## Вместе с i18n
+
+Версионирование сочетается с [интернационализацией](/guide/i18n): **язык снаружи, версия внутри** (`/ru/v1/...`).
+
+```
+docs/
+  introduction/getting-started.md      ← EN latest
+  v1/introduction/getting-started.md   ← EN v1
+  ru/
+    introduction/getting-started.md    ← RU latest
+    v1/introduction/getting-started.md ← RU v1
+```
+
+```ts
+import { defineConfig } from 'docusite'
+
+export default defineConfig({
+  locales: {
+    root: { label: 'English', lang: 'en' },
+    ru: { label: 'Русский', lang: 'ru', link: '/ru/' },
+  },
+  nav: {
+    '/': [{ text: 'Guide', link: '/introduction/getting-started' }],
+    '/v1/': [{ text: 'Guide', link: '/v1/introduction/getting-started' }],
+    '/ru/': [{ text: 'Гайд', link: '/ru/introduction/getting-started' }],
+    '/ru/v1/': [{ text: 'Гайд', link: '/ru/v1/introduction/getting-started' }],
+  },
+  sidebar: {
+    '/': [/* EN latest */],
+    '/v1/': [/* EN v1 */],
+    '/ru/': [/* RU latest */],
+    '/ru/v1/': [/* RU v1 */],
+  },
+  versions: {
+    latest: '2.0.0',
+    // Ссылки older — только для root locale; для /ru/ префикс добавится сам
+    older: [
+      { label: 'v1.x.x', link: '/v1/introduction/getting-started' },
+    ],
+  },
+})
+```
+
+Docusite:
+
+- мержит path-keyed nav с i18n-локалями (не затирает `label` / `lang`);
+- на `/ru/v1/...` показывает баннер и flyout для v1, а «latest» ведёт на `/ru/...`;
+- в переключателе языков сохраняет текущую версию (`/v1/...` ↔ `/ru/v1/...`).
+
 ## Полный пример
 
 ```ts

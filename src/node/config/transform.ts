@@ -78,6 +78,8 @@ export interface TransformResult {
   contentInjections?: DocusiteContentInjection[]
   runtimeScriptCode?: string
   hasPathKeyedNav?: boolean
+  /** True when user configured real i18n `locales` (not only virtual version locales). */
+  hasI18n?: boolean
   /** Framework mark Vue components used live in markdown (not nav/sidebar placeholders). */
   frameworkMarks?: FrameworkMarkName[]
 }
@@ -145,6 +147,14 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
   // -- Locales --
   if (config.locales) {
     vpConfig.locales = resolveLocales(config.locales)
+    // Hide stock VitePress language switchers; theme injects version-aware ones.
+    vpConfig.head.push([
+      'style',
+      {},
+      '.VPNavBar .VPNavBarTranslations:not(.docusite-translations),' +
+        '.VPNavScreen .VPNavScreenTranslations:not(.docusite-translations){' +
+        'display:none!important}',
+    ])
   }
 
   // -- Build auto-appended nav items (versions flyout, changelog, llms) --
@@ -206,20 +216,16 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
     themeConfig.nav = [...rootNav, ...autoNavItems]
     transformNav(themeConfig.nav)
 
-    const navLocaleEntries = resolveNavLocales(
+    vpConfig.locales ??= {}
+    const applied = applyNavLocales(
+      vpConfig.locales,
       config.nav,
       autoNavItems,
       deriveRootLabel(config),
       deriveRootLang(config),
     )
-
-    if (navLocaleEntries.length > 0) {
-      vpConfig.locales ??= {}
-      for (const entry of navLocaleEntries) {
-        vpConfig.locales[entry.key] = entry.vpLocale
-      }
-      hasPathKeyedNav = true
-    }
+    if (applied) hasPathKeyedNav = true
+    if (Object.keys(vpConfig.locales).length === 0) delete vpConfig.locales
   } else if (config.nav) {
     // Flat nav (existing behavior)
     themeConfig.nav = [...config.nav, ...autoNavItems]
@@ -307,6 +313,7 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
     contentInjections,
     runtimeScriptCode: resolveRuntimeScriptCode(config.runtimeScript, cwd, docsDir),
     hasPathKeyedNav,
+    hasI18n: !!config.locales,
     frameworkMarks: detectFrameworkMarksInMarkdown(docsDir),
   }
 }
@@ -591,50 +598,76 @@ function deriveRootLang(config: DocusiteConfig): string {
   return 'en'
 }
 
-interface NavLocaleEntry {
-  /** VitePress locale key (e.g. 'v1', 'api') */
-  key: string
-  /** VitePress locale config object */
-  vpLocale: NonNullable<UserConfig<DefaultTheme.Config>['locales']>[string]
-}
-
 /**
- * Convert a path-keyed nav map into VitePress locale entries.
- * Each non-`/` key becomes a virtual locale with its own `themeConfig.nav`.
- * All virtual locales share the root label/lang so the language switcher
- * is suppressed (VitePress's `useLangs()` filters out same-label locales).
+ * Apply path-keyed nav onto VitePress locales.
+ *
+ * - Existing i18n locales (e.g. `ru`) keep their label/lang/link; only `themeConfig.nav` is set.
+ * - New virtual locales (e.g. `v1`, `ru/v1`) inherit label/lang from the longest parent
+ *   i18n locale (or root), so same-language version locales collapse in the language switcher.
  */
-function resolveNavLocales(
+function applyNavLocales(
+  locales: Record<string, any>,
   pathKeyedNav: Record<string, DefaultTheme.NavItem[]>,
   autoNavItems: DefaultTheme.NavItem[],
   rootLabel: string,
   rootLang: string,
-): NavLocaleEntry[] {
-  const entries: NavLocaleEntry[] = []
+): boolean {
+  let applied = false
 
   for (const [pathPrefix, navItems] of Object.entries(pathKeyedNav)) {
     // The '/' key goes into themeConfig.nav on the main config, not a locale
     if (pathPrefix === '/') continue
 
     // Strip leading/trailing slashes to create locale key
-    // e.g. '/v1/' → 'v1', 'api' → 'api'
+    // e.g. '/v1/' → 'v1', '/ru/v1/' → 'ru/v1'
     const localeKey = pathPrefix.replace(/^\/|\/$/g, '')
     if (!localeKey) continue
 
     const fullNav = [...navItems, ...autoNavItems]
     transformNav(fullNav)
 
-    entries.push({
-      key: localeKey,
-      vpLocale: {
-        label: rootLabel,
-        lang: rootLang,
+    const existing = locales[localeKey]
+    if (existing) {
+      existing.themeConfig = existing.themeConfig ?? {}
+      existing.themeConfig.nav = fullNav
+    } else {
+      const { label, lang } = findParentLocaleIdentity(locales, localeKey, rootLabel, rootLang)
+      locales[localeKey] = {
+        label,
+        lang,
         themeConfig: { nav: fullNav },
-      },
-    })
+      }
+    }
+    applied = true
   }
 
-  return entries
+  return applied
+}
+
+/** Longest existing locale prefix of `localeKey`, else root label/lang. */
+function findParentLocaleIdentity(
+  locales: Record<string, any>,
+  localeKey: string,
+  rootLabel: string,
+  rootLang: string,
+): { label: string; lang: string } {
+  const parts = localeKey.split('/')
+  for (let i = parts.length - 1; i >= 1; i--) {
+    const parentKey = parts.slice(0, i).join('/')
+    const parent = locales[parentKey]
+    if (parent?.label != null) {
+      return {
+        label: parent.label,
+        lang: parent.lang ?? rootLang,
+      }
+    }
+  }
+
+  const root = locales.root
+  return {
+    label: root?.label ?? rootLabel,
+    lang: root?.lang ?? rootLang,
+  }
 }
 
 /**

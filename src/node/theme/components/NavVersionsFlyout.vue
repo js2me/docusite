@@ -5,6 +5,11 @@ import VPNavScreenMenuGroup from 'vitepress/dist/client/theme-default/components
 import VPNavScreenMenuGroupLink from 'vitepress/dist/client/theme-default/components/VPNavScreenMenuGroupLink.vue'
 import { useData } from 'vitepress'
 import { computed } from 'vue'
+import {
+  currentVersionLabel,
+  parseDocPath,
+  withLocalePrefix,
+} from '../version-locale.js'
 
 const props = defineProps<{
   screenMenu?: boolean
@@ -13,22 +18,28 @@ const props = defineProps<{
   olderVersions?: Array<{ label: string; link: string }>
 }>()
 
-const { page } = useData()
+const { page, site } = useData()
+
+const localeKeys = computed(() => Object.keys(site.value.locales ?? {}))
+
+const localePrefix = computed(() =>
+  parseDocPath(page.value.relativePath, localeKeys.value).localePrefix,
+)
 
 const items = computed(() => [
-  { text: `${props.latestLabel} (latest)`, link: props.latestLink },
-  ...(props.olderVersions ?? []).map(v => ({ text: v.label, link: v.link })),
+  {
+    text: `${props.latestLabel} (latest)`,
+    link: withLocalePrefix(props.latestLink, localePrefix.value),
+  },
+  ...(props.olderVersions ?? []).map((v) => ({
+    text: v.label,
+    link: withLocalePrefix(v.link, localePrefix.value),
+  })),
 ])
 
-const buttonLabel = computed(() => {
-  const rel = page.value.relativePath
-  for (const v of props.olderVersions ?? []) {
-    // Extract the version prefix from the link, e.g. "/v6/" from "/v6/intro"
-    const match = v.link.match(/^\/(v\d+)\//)
-    if (match && rel.startsWith(match[1] + '/')) return v.label
-  }
-  return props.latestLabel
-})
+const buttonLabel = computed(() =>
+  currentVersionLabel(page.value.relativePath, props.latestLabel, props.olderVersions),
+)
 </script>
 
 <template>
