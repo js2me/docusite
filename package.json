@@ -53,16 +53,16 @@
   "dependencies": {
     "@iconify-json/logos": "^1.2.11",
     "cac": "^6.7.14",
-    "jiti": "^2.4.2",
-    "unocss": "^66.6.7",
-    "vitepress": "^1.6.3",
-    "vitepress-plugin-llms": "^1.1.0"
+    "jiti": "^2.7.0",
+    "unocss": "^66.7.5",
+    "vitepress": "^1.6.4",
+    "vitepress-plugin-llms": "^1.13.4"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.30.0",
+    "@changesets/cli": "^2.31.1",
     "sborshik": "^3.5.0",
-    "tsup": "^8.4.0",
-    "typescript": "^5.8.3",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
     "vitest": "^4.1.10"
   }
 }
