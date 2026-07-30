@@ -457,14 +457,38 @@ html.dark {
   inset: -1.25em -1.5em;
   background: linear-gradient(-45deg, var(--docusite-c-gradient-1) 33%, var(--docusite-c-gradient-2) 33% 66%, var(--docusite-c-gradient-3) 66%);
   filter: blur(72px);
-  opacity: 0.32;
   border-radius: 40%;
   pointer-events: none;
   transform: translateY(8px) translateX(-17px);
+  opacity: 0;
+  animation: h1-appear 1s ease-out forwards, h1-glow 10s ease-in-out 1s infinite alternate;
+}
+
+@keyframes h1-appear {
+  to {
+    opacity: 0.32;
+  }
+}
+
+@keyframes h1-glow {
+  0% {
+    transform: translateY(8px) translateX(-17px) scale(0.92) rotate(-3deg);
+    filter: blur(72px) hue-rotate(0deg);
+  }
+  100% {
+    transform: translateY(8px) translateX(-17px) scale(1.08) rotate(3deg);
+    filter: blur(72px) hue-rotate(30deg);
+  }
 }
 
 html.dark .VPDoc .vp-doc h1:first-of-type::before {
-  opacity: 0.26;
+  animation: h1-appear-dark 1s ease-out forwards, h1-glow 10s ease-in-out 1s infinite alternate;
+}
+
+@keyframes h1-appear-dark {
+  to {
+    opacity: 0.26;
+  }
 }
 
 /* ── Doc page: center content when no sidebar ── */
