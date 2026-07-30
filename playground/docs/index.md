@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Docusite
   text: Documentation Made Simple
-  tagline: Write markdown, get a beautiful docs site
+  tagline: Write markdown @{packageJson.name}, get a beautiful docs site
   actions:
     - theme: brand
       text: Get Started

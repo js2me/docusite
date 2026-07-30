@@ -23,7 +23,9 @@
     "docs:dev": "./bin/cli.mjs dev",
     "docs:build": "./bin/cli.mjs build",
     "docs:preview": "./bin/cli.mjs preview",
-    "version-packages": "pnpm exec changeset version && pnpm install --lockfile-only"
+    "version-packages": "pnpm exec changeset version && pnpm install --lockfile-only",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "documentation",
@@ -60,6 +62,7 @@
     "@changesets/cli": "^2.30.0",
     "sborshik": "^3.5.0",
     "tsup": "^8.4.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.10"
   }
 }

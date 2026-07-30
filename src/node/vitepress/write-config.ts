@@ -99,7 +99,7 @@ function __docusite_llms_dev_plugin(docsDir, base = '/') {
 
       server.middlewares.use((req, res, next) => {
         const pathname = (req.url || '').split('?')[0]
-        const isLlmsFull = matchLlmsPath(pathname, 'llms.txt')
+        const isLlmsFull = matchLlmsPath(pathname, 'llms-full.txt')
         const isLlms = matchLlmsPath(pathname, 'llms.txt')
         if (isLlmsFull || isLlms) {
           try {

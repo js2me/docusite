@@ -186,16 +186,33 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
     }
   }
 
+  // -- Vite plugins (order matters: content-injections must run before llms plugin
+  //    so that @{…} template variables are resolved before vitepress-plugin-llms
+  //    captures the markdown content for llms.txt / llms-full.txt generation) --
+  vpConfig.vite = vpConfig.vite ?? {}
+  vpConfig.vite.plugins = vpConfig.vite.plugins ?? []
+
+  // Content injections → must be first so @{…} are resolved for all downstream plugins
+  if (contentInjections?.length) {
+    vpConfig.vite.plugins.push({ __docusite_content_injections: true, __docusite_content_injections_data: contentInjections } as any)
+  }
+
   const llmsEnabled = config.llms !== false
   if (llmsEnabled) {
     const basePrefix = (config.base ?? '/').replace(/\/$/, '')
     autoNavItems.push({ text: 'LLM, AI docs 🤖', link: `${basePrefix}/llms.txt` })
 
-    vpConfig.vite = vpConfig.vite ?? {}
-    vpConfig.vite.plugins = vpConfig.vite.plugins ?? []
     const llmsMarker: any = { __docusite_llms: true }
-    if (config.llms !== true && config.llms) {
-      llmsMarker.__docusite_llms_options = config.llms
+    const llmsOptions: Record<string, unknown> =
+      config.llms !== true && config.llms ? { ...config.llms } : {}
+    // Pass the resolved site title so vitepress-plugin-llms uses it
+    // instead of the unresolved @{…} in index.md frontmatter.
+    // resolveConfigTemplates() has already resolved @{…} in config.title.
+    if (config.title && !llmsOptions.title) {
+      llmsOptions.title = config.title
+    }
+    if (Object.keys(llmsOptions).length) {
+      llmsMarker.__docusite_llms_options = llmsOptions
     }
     vpConfig.vite.plugins.push(llmsMarker)
 
@@ -244,36 +261,21 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
   }
 
   // -- UnoCSS icons (i-logos:*, etc.) --
-  vpConfig.vite = vpConfig.vite ?? {}
-  vpConfig.vite.plugins = vpConfig.vite.plugins ?? []
   vpConfig.vite.plugins.push({ __docusite_unocss: true, __docusite_unocss_docsDir: docsDir } as any)
 
   // -- Custom CSS --
   if (config.customCss?.length) {
-    vpConfig.vite = vpConfig.vite ?? {}
-    vpConfig.vite.plugins = vpConfig.vite.plugins ?? []
     vpConfig.vite.plugins.push({ __docusite_custom_css: config.customCss })
-  }
-
-  // -- Content injections → add Vite transform plugin marker --
-  if (contentInjections?.length) {
-    vpConfig.vite = vpConfig.vite ?? {}
-    vpConfig.vite.plugins = vpConfig.vite.plugins ?? []
-    vpConfig.vite.plugins.push({ __docusite_content_injections: true, __docusite_content_injections_data: contentInjections } as any)
   }
 
   // -- Source links → rewrite (/src/...) markdown links to GitHub URLs --
   if (config.sourceLinks) {
-    vpConfig.vite = vpConfig.vite ?? {}
-    vpConfig.vite.plugins = vpConfig.vite.plugins ?? []
     vpConfig.vite.plugins.push({ __docusite_source_links: true, __docusite_source_links_options: config.sourceLinks } as any)
   }
 
   // -- logos.hero → inject hero.image into home layout markdown (falls back to logos.main) --
   const heroLogo = config.logos?.hero ?? config.logos?.main
   if (heroLogo) {
-    vpConfig.vite = vpConfig.vite ?? {}
-    vpConfig.vite.plugins = vpConfig.vite.plugins ?? []
     vpConfig.vite.plugins.push({
       __docusite_logos_hero: true,
       __docusite_logos_hero_src: resolvePublicAssetPath(heroLogo),
