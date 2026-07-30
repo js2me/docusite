@@ -1,5 +1,13 @@
 # docusite
 
+## 0.1.8
+
+### Patch Changes
+
+- 14c1caf: update deps to latest
+- 505730e: fixed llms llms-full txt content injections
+- 88d0884: add juicy animation for pages
+
 ## 0.1.7
 
 ### Patch Changes
