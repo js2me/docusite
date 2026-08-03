@@ -466,7 +466,7 @@ html.dark {
 
 @keyframes h1-appear {
   to {
-    opacity: 0.32;
+    opacity: 0.36;
   }
 }
 
