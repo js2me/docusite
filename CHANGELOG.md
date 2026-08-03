@@ -1,5 +1,11 @@
 # docusite
 
+## 0.1.9
+
+### Patch Changes
+
+- e7c23e5: h1 appear gradient less opacity
+
 ## 0.1.8
 
 ### Patch Changes
