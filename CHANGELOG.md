@@ -1,5 +1,11 @@
 # docusite
 
+## 0.1.10
+
+### Patch Changes
+
+- 34a2a6c: fix active sidebar css
+
 ## 0.1.9
 
 ### Patch Changes
