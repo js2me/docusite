@@ -19,11 +19,19 @@ export function setupSidebarActiveScroll(router?: {
     return Math.max(navBottom, container.getBoundingClientRect().top) + PADDING
   }
 
+  /** First `.is-active` with no active descendant — skips a group sharing a child's URL. */
+  const getDeepestActive = (container: HTMLElement): HTMLElement | null => {
+    for (const el of container.querySelectorAll<HTMLElement>('.VPSidebarItem.is-active')) {
+      if (!el.querySelector('.VPSidebarItem.is-active')) return el
+    }
+    return null
+  }
+
   const syncSidebarScroll = () => {
     const container = getContainer()
     if (!container) return
 
-    const active = container.querySelector<HTMLElement>('.VPSidebarItem.is-active')
+    const active = getDeepestActive(container)
     if (!active) return
 
     const visibleTop = getVisibleTop(container)

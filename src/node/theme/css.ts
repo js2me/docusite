@@ -230,6 +230,16 @@ html.dark .VPSidebarItem.is-active::before {
   background: #1d1d24;
 }
 
+/* Only the deepest active item highlights; a group sharing a child's URL
+   would otherwise light up alongside it. */
+.VPSidebarItem.is-active:has(.VPSidebarItem.is-active)::before {
+  background: transparent;
+}
+
+.VPSidebarItem.is-active:has(.VPSidebarItem.is-active) > .item .link > .text {
+  color: var(--vp-c-text-1);
+}
+
 .Layout .VPNavBar .title {
   background: transparent !important;
   transition: background-color 0s;
