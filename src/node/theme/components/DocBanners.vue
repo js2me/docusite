@@ -2,11 +2,10 @@
 import { useData } from 'vitepress'
 import { computed, ref } from 'vue'
 import {
-  isOldVersionPath,
   isLatestVersionPath,
   extractVersionSegment,
   parseDocPath,
-  withLocalePrefix,
+  withLocalePrefix
 } from '../version-locale.js'
 
 interface BannerConfig {
@@ -218,7 +217,7 @@ function iconForType(type: 'info' | 'warning' | 'tip'): string {
   font-size: 16px;
   border: 1px solid var(--docusite-banner-border);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   width: fit-content;
 }
