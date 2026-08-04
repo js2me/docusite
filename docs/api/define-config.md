@@ -57,6 +57,12 @@ interface DocusiteConfig {
   /** Локали для i18n */
   locales?: Record<string, DocusiteLocale>
 
+  /** Селектор версий — добавляет NavVersionsFlyout в навигацию */
+  versions?: DocusiteVersions
+
+  /** Глобальные баннеры-объявления, ограниченные префиксом пути (см. [Баннеры](/guide/banners)) */
+  banners?: DocusiteScopedBanner[]
+
   /** Ссылка на CHANGELOG в навигации. true = по умолчанию, false = скрыть, string = кастомная ссылка, { src } = копировать файл */
   changelog?: boolean | string | DocusiteChangelog
 
@@ -117,6 +123,70 @@ interface DocusiteLocale {
   sidebar?: DefaultTheme.Sidebar
 }
 ```
+
+### DocusiteBannerType
+
+```ts
+type DocusiteBannerType = 'info' | 'warning' | 'tip'
+```
+
+### DocusiteBanner
+
+```ts
+interface DocusiteBanner {
+  /** Текст баннера. Поддерживает плейсхолдеры {latestLink}, {latestLabel}, {versionLabel} */
+  message: string
+  /** Кнопка-ссылка (call-to-action). href поддерживает те же плейсхолдеры */
+  link?: { text: string; href: string }
+  /** Визуальный стиль (по умолчанию: 'warning' для версионных, 'info' для глобальных) */
+  type?: DocusiteBannerType
+  /** Разрешить закрыть баннер (сохраняется в localStorage) */
+  dismissible?: boolean
+  /** Ключ localStorage для запоминания закрытия. Генерируется автоматически, если не задан */
+  dismissKey?: string
+}
+```
+
+### DocusiteScopedBanner
+
+Расширяет `DocusiteBanner` ограничением по пути (для глобальных баннеров):
+
+```ts
+interface DocusiteScopedBanner extends DocusiteBanner {
+  /** Префикс(ы) пути, где показывается баннер. '/' — все doc-страницы */
+  paths: string | string[]
+}
+```
+
+### DocusiteVersion
+
+```ts
+interface DocusiteVersion {
+  /** Отображаемое название версии, например 'v6.x.x' */
+  label: string
+  /** Ссылка на стартовую страницу версии */
+  link: string
+  /** Баннер для этой версии. false — явно отключить */
+  banner?: DocusiteBanner | false
+}
+```
+
+### DocusiteVersions
+
+```ts
+interface DocusiteVersions {
+  /** Метка актуальной версии, например '7.2.1' */
+  latest: string
+  /** Старые версии */
+  older?: DocusiteVersion[]
+  /** Баннер на страницах актуальной версии */
+  latestBanner?: DocusiteBanner | false
+  /** ⚠️ deprecated. Fallback-баннер для старых версий без своего banner */
+  oldVersionBanner?: { show?: boolean; message?: string }
+}
+```
+
+Подробности и примеры — в разделе [Баннеры](/guide/banners).
 
 ### DocusiteSearch
 
@@ -184,5 +254,5 @@ interface DocusiteContentInjection {
 Для использования типов в TypeScript:
 
 ```ts
-import type { DocusiteConfig, DocusiteColors } from 'docusite'
+import type { DocusiteConfig, DocusiteColors, DocusiteBanner, DocusiteScopedBanner, DocusiteVersions } from 'docusite'
 ```

@@ -32,6 +32,11 @@ export default defineConfig({
       { text: 'API', link: '/v1/api/overview' },
       { text: 'Examples', link: '/v1/introduction/markdown-examples' },
     ],
+    '/v0/': [
+      { text: 'Guide', link: '/v0/introduction/getting-started' },
+      { text: 'API', link: '/v0/api/overview' },
+      { text: 'Examples', link: '/v0/introduction/markdown-examples' },
+    ],
     '/ru/': [
       { text: 'Гайд', link: '/ru/introduction/getting-started' },
       { text: 'API', link: '/ru/api/overview' },
@@ -40,6 +45,11 @@ export default defineConfig({
       { text: 'Гайд', link: '/ru/v1/introduction/getting-started' },
       { text: 'API', link: '/ru/v1/api/overview' },
       { text: 'Примеры', link: '/ru/v1/introduction/markdown-examples' },
+    ],
+    '/ru/v0/': [
+      { text: 'Гайд', link: '/ru/v0/introduction/getting-started' },
+      { text: 'API', link: '/ru/v0/api/overview' },
+      { text: 'Примеры', link: '/ru/v0/introduction/markdown-examples' },
     ],
   },
   runtimeScript: () => {
@@ -83,6 +93,22 @@ export default defineConfig({
         ],
       },
     ],
+    '/v0/': [
+      {
+        text: 'Introduction',
+        items: [
+          { text: 'Getting Started', link: '/v0/introduction/getting-started' },
+          { text: 'Markdown Examples', link: '/v0/introduction/markdown-examples' },
+        ],
+      },
+      {
+        text: 'API Reference',
+        items: [
+          { text: 'Overview', link: '/v0/api/overview' },
+          { text: '<ReactMark /> Hooks', link: '/v0/api/react-hooks' },
+        ],
+      },
+    ],
     '/ru/': [
       {
         text: 'Введение',
@@ -115,20 +141,58 @@ export default defineConfig({
         ],
       },
     ],
+    '/ru/v0/': [
+      {
+        text: 'Введение',
+        items: [
+          { text: 'Быстрый старт', link: '/ru/v0/introduction/getting-started' },
+          { text: 'Примеры Markdown', link: '/ru/v0/introduction/markdown-examples' },
+        ],
+      },
+      {
+        text: 'Справочник API',
+        items: [
+          { text: 'Обзор', link: '/ru/v0/api/overview' },
+          { text: '<ReactMark /> Хуки', link: '/ru/v0/api/react-hooks' },
+        ],
+      },
+    ],
   },
   changelog: { src: 'CHANGELOG.md' },
   search: 'local',
   llms: true,
   versions: {
     latest: '2.0.0',
+    latestBanner: {
+      message: 'You are viewing the latest version ({versionLabel}).',
+      type: 'info',
+      dismissible: true,
+    },
     older: [
-      { label: 'v1.x.x', link: '/v1/introduction/getting-started' },
+      {
+        label: 'v1.x.x',
+        link: '/v1/introduction/getting-started',
+        banner: {
+          message: 'You are viewing an older version ({versionLabel}). Switch to the latest version.',
+          link: { text: 'View latest →', href: '{latestLink}' },
+          type: 'warning',
+        },
+      },
+      {
+        // v0 has no `banner` — falls back to `oldVersionBanner` below (deprecated API)
+        label: 'v0.x.x',
+        link: '/v0/introduction/getting-started',
+      },
     ],
+    // Deprecated: fallback for older versions without their own `banner` (v0 here)
     oldVersionBanner: {
-      message: 'You are viewing an older version. Switch to {latestLabel}.',
+      message: 'You are viewing a very old version. Switch to {latestLabel}.',
       show: true,
-    }
+    },
   },
+  banners: [
+    { paths: '/', message: 'Welcome to the Docusite playground!', type: 'tip', dismissible: true },
+  ],
   github: 'https://github.com/user/docusite',
   contentInjections: [
     { key: 'version', value: { major: 2, minor: 0, full: '2.0.0' } },

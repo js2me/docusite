@@ -33,6 +33,7 @@ export default defineConfig({
           { text: 'llms.txt', link: '/guide/llms' },
           { text: 'Changelog', link: '/guide/changelog' },
           { text: 'Версионирование', link: '/guide/versioning' },
+          { text: 'Баннеры', link: '/guide/banners' },
           { text: 'Подстановка контента', link: '/guide/content-injections' },
           { text: 'Клиентские скрипты', link: '/guide/runtime-scripts' },
           { text: '<ReactMark /> ReactMark', link: '/guide/react-mark' },

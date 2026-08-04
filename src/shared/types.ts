@@ -83,6 +83,46 @@ export interface DocusiteLlmsOptions {
 }
 
 // ---------------------------------------------------------------------------
+// Banner
+// ---------------------------------------------------------------------------
+
+/** Visual style for a doc banner. */
+export type DocusiteBannerType = 'info' | 'warning' | 'tip'
+
+/** A single banner configuration. */
+export interface DocusiteBanner {
+  /** Banner message. Supports template variables:
+   *  - `{latestLink}` — link to latest version entry page
+   *  - `{latestLabel}` — label like "v3.0.0"
+   *  - `{versionLabel}` — the current version's label (per-version banners only)
+   */
+  message: string
+  /** Link text + URL for a call-to-action. If omitted, no link is shown. */
+  link?: {
+    /** Link label, e.g. `'View latest →'` */
+    text: string
+    /** Link URL. Supports the same template variables as `message`. */
+    href: string
+  }
+  /** Visual style (default: `'warning'` for version banners, `'info'` for global) */
+  type?: DocusiteBannerType
+  /** Allow users to dismiss the banner (persisted in localStorage). */
+  dismissible?: boolean
+  /** localStorage key suffix for dismiss persistence. Auto-generated if not set when `dismissible` is true. */
+  dismissKey?: string
+}
+
+/** A global/announcement banner scoped by path prefix. */
+export interface DocusiteScopedBanner extends DocusiteBanner {
+  /**
+   * Path prefix(es) where this banner shows.
+   * Use `'/'` for all doc pages. Use `'/v2/'` for v2 pages only.
+   * String for one prefix, array for multiple.
+   */
+  paths: string | string[]
+}
+
+// ---------------------------------------------------------------------------
 // Versioning
 // ---------------------------------------------------------------------------
 
@@ -91,6 +131,8 @@ export interface DocusiteVersion {
   label: string
   /** Link to the version's entry page, e.g. `'/v6/introduction/getting-started'` */
   link: string
+  /** Banner shown on pages within this older version. Set to `false` to explicitly disable. */
+  banner?: DocusiteBanner | false
 }
 
 export interface DocusiteVersions {
@@ -98,7 +140,15 @@ export interface DocusiteVersions {
   latest: string
   /** Older versions */
   older?: DocusiteVersion[]
-  /** Show a warning banner on old version pages */
+  /**
+   * Banner shown on latest version pages.
+   * @example `{ message: 'You are viewing the latest stable documentation.', type: 'info' }`
+   */
+  latestBanner?: DocusiteBanner | false
+  /**
+   * @deprecated Use per-version `banner` on `older[]` items and `latestBanner` instead.
+   * If set, applies as the default banner for all older versions that don't have their own `banner`.
+   */
   oldVersionBanner?: {
     /** Enable the banner (default: `true` when `older` versions exist) */
     show?: boolean
@@ -206,6 +256,18 @@ export interface DocusiteConfig {
 
   /** Version selector — adds a NavVersionsFlyout to the navbar */
   versions?: DocusiteVersions
+
+  /** Global/announcement banners, scoped by path prefix.
+   *  Show on doc pages whose relativePath matches the `paths` prefix.
+   *  @example
+   *  ```ts
+   *  banners: [
+   *    { paths: '/', message: 'We are hiring!', type: 'info', dismissible: true },
+   *    { paths: '/beta/', message: 'This is beta documentation.', type: 'warning' },
+   *  ]
+   *  ```
+   */
+  banners?: DocusiteScopedBanner[]
 
   /** Show CHANGELOG link in the navbar. `true` = default, `false` = hidden, `string` = custom link, `{ src }` = copy file from path */
   changelog?: boolean | string | DocusiteChangelog

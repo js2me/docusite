@@ -2,7 +2,7 @@ import { mkdirSync, existsSync, readFileSync, writeFileSync, copyFileSync, unlin
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { UserConfig, DefaultTheme } from 'vitepress'
-import type { DocusiteLlmsOptions, DocusiteContentInjection, DocusiteSourceLinks, DocusiteVersions } from '../../shared/types.js'
+import type { DocusiteLlmsOptions, DocusiteContentInjection, DocusiteScopedBanner, DocusiteSourceLinks, DocusiteVersions } from '../../shared/types.js'
 import { FRAMEWORK_MARKS, type FrameworkMarkName } from '../config/framework-marks.js'
 
 // Resolve the real path to vitepress-plugin-llms from within docusite's installation
@@ -226,6 +226,7 @@ const UNOCSS_ICON_SCAN_CODE = `function __docusite_scan_icon_classes(docsDir) {
 export interface WriteOptions {
   versions?: DocusiteVersions
   versionsLatestLink?: string
+  banners?: DocusiteScopedBanner[]
   changelogSrc?: string
   contentInjections?: DocusiteContentInjection[]
   runtimeScriptCode?: string
@@ -254,11 +255,12 @@ export function writeVitePressConfig(
   const content = serializeConfig(config)
   writeFileSync(configPath, content, 'utf-8')
 
-  // Write theme files (on-demand framework marks + optional NavVersionsFlyout)
+  // Write theme files (on-demand framework marks + optional NavVersionsFlyout + banners)
   writeThemeFiles(
     vpxDir,
     options.versions,
     options.versionsLatestLink,
+    options.banners,
     options.runtimeScriptCode,
     options.frameworkMarks ?? [],
     options.hasI18n ?? false,
@@ -280,13 +282,109 @@ export function writeVitePressConfig(
 }
 
 // ---------------------------------------------------------------------------
-// Theme files (on-demand framework marks + optional NavVersionsFlyout)
+// Build DocBanners props (with backward-compat for oldVersionBanner)
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve per-version banner config from DocusiteVersions, including backward
+ * compatibility with the deprecated `oldVersionBanner`.
+ */
+function resolveVersionBanners(versions: DocusiteVersions): {
+  latest: Record<string, unknown> | null
+  older: Record<string, Record<string, unknown>>
+} {
+  // Latest banner
+  let latest: Record<string, unknown> | null = null
+  if (versions.latestBanner && versions.latestBanner !== false) {
+    latest = versions.latestBanner as Record<string, unknown>
+  }
+
+  // Older banners: per-version banner, with oldVersionBanner as fallback
+  const older: Record<string, Record<string, unknown>> = {}
+  for (const v of versions.older ?? []) {
+    const versionSeg = extractVersionSegmentFromLink(v.link)
+    if (!versionSeg) continue
+
+    if (v.banner === false) {
+      // Explicitly disabled — skip
+      continue
+    } else if (v.banner && v.banner !== false) {
+      older[versionSeg] = v.banner as Record<string, unknown>
+    } else if (versions.oldVersionBanner?.show !== false) {
+      // Backward compat: fall back to oldVersionBanner config
+      const message =
+        versions.oldVersionBanner?.message
+        || 'You are viewing an older version. Switch to the latest version ({latestLabel}).'
+      older[versionSeg] = {
+        message,
+        link: { text: 'View latest →', href: '{latestLink}' },
+        type: 'warning',
+      }
+    }
+  }
+
+  return { latest, older }
+}
+
+/** Extract version segment (vN) from a link path like '/v1/introduction/getting-started'. */
+function extractVersionSegmentFromLink(link: string): string | undefined {
+  const match = link.match(/(?:^|\/)(v\d+)(?:\/|$)/)
+  return match?.[1]
+}
+
+/**
+ * Build the serialized props string for the DocBanners component
+ * in the generated theme/index.ts layout slot.
+ */
+function buildDocBannersProps(
+  versions?: DocusiteVersions,
+  versionsLatestLink?: string,
+  banners?: DocusiteScopedBanner[],
+): string {
+  const latestLabel = versions
+    ? (versions.latest.startsWith('v') ? versions.latest : `v${versions.latest}`)
+    : ''
+  const latestLink = versionsLatestLink || '/'
+
+  // Version banners
+  let versionBannersObj: string
+  if (versions) {
+    const resolved = resolveVersionBanners(versions)
+    versionBannersObj = `{
+        latest: ${serializeValue(resolved.latest, 4)},
+        older: ${serializeValue(resolved.older, 4)},
+      }`
+  } else {
+    versionBannersObj = `{
+        latest: null,
+        older: {},
+      }`
+  }
+
+  // Older version links (for isOldVersionPath/isLatestVersionPath at runtime)
+  const olderVersionLinks = versions?.older ?? []
+
+  // Global banners
+  const globalBanners = banners ?? []
+
+  return `{
+        versionBanners: ${versionBannersObj},
+        olderVersionLinks: ${serializeValue(olderVersionLinks, 3)},
+        globalBanners: ${serializeValue(globalBanners, 3)},
+        latestLabel: ${JSON.stringify(latestLabel)},
+        latestLink: ${JSON.stringify(latestLink)},
+      }`
+}
+
+// ---------------------------------------------------------------------------
+// Theme index.ts generation
 // ---------------------------------------------------------------------------
 
 function writeThemeFiles(
   vpxDir: string,
   versions?: DocusiteVersions,
   versionsLatestLink?: string,
+  banners?: DocusiteScopedBanner[],
   runtimeScriptCode?: string,
   frameworkMarks: FrameworkMarkName[] = [],
   hasI18n = false,
@@ -312,10 +410,11 @@ function writeThemeFiles(
   }
 
   // Client helpers: scroll TOC / sidebar panes + version/i18n path utils
+  const hasAnyBanners = !!(versions || (banners && banners.length))
   const themeHelpers = [
     'outline-active-scroll',
     'sidebar-active-scroll',
-    ...(versions || hasI18n ? ['version-locale', 'docusite-langs'] as const : []),
+    ...(versions || hasI18n || hasAnyBanners ? ['version-locale', 'docusite-langs'] as const : []),
   ]
   for (const name of themeHelpers) {
     const src = resolve(docusiteDistDir, `node/theme/${name}.js`)
@@ -327,16 +426,25 @@ function writeThemeFiles(
     }
   }
 
-  // Copy NavVersionsFlyout.vue + OldVersionBanner.vue when versioning is enabled
+  // Copy DocBanners.vue when any banner source is configured
+  if (hasAnyBanners) {
+    const src = resolve(docusiteDistDir, 'node/theme/components/DocBanners.vue')
+    const dst = resolve(componentsDir, 'DocBanners.vue')
+    if (existsSync(src)) {
+      copyFileSync(src, dst)
+    } else {
+      console.warn(`[docusite] DocBanners.vue not found at ${src}`)
+    }
+  }
+
+  // Copy NavVersionsFlyout.vue when versioning is enabled
   if (versions) {
-    for (const name of ['NavVersionsFlyout', 'OldVersionBanner'] as const) {
-      const src = resolve(docusiteDistDir, `node/theme/components/${name}.vue`)
-      const dst = resolve(componentsDir, `${name}.vue`)
-      if (existsSync(src)) {
-        copyFileSync(src, dst)
-      } else {
-        console.warn(`[docusite] ${name}.vue not found at ${src}`)
-      }
+    const src = resolve(docusiteDistDir, 'node/theme/components/NavVersionsFlyout.vue')
+    const dst = resolve(componentsDir, 'NavVersionsFlyout.vue')
+    if (existsSync(src)) {
+      copyFileSync(src, dst)
+    } else {
+      console.warn(`[docusite] NavVersionsFlyout.vue not found at ${src}`)
     }
   }
 
@@ -357,7 +465,7 @@ function writeThemeFiles(
   const themeIndex = resolve(themeDir, 'index.ts')
   writeFileSync(
     themeIndex,
-    buildThemeIndexContent(versions, versionsLatestLink, runtimeScriptCode, frameworkMarks, hasI18n),
+    buildThemeIndexContent(versions, versionsLatestLink, banners, runtimeScriptCode, frameworkMarks, hasI18n),
     'utf-8',
   )
 }
@@ -365,6 +473,7 @@ function writeThemeFiles(
 function buildThemeIndexContent(
   versions?: DocusiteVersions,
   versionsLatestLink?: string,
+  banners?: DocusiteScopedBanner[],
   runtimeScriptCode?: string,
   frameworkMarks: FrameworkMarkName[] = [],
   hasI18n = false,
@@ -380,11 +489,16 @@ function buildThemeIndexContent(
     (name) => `app.component('${name}', ${name})`,
   )
 
+  const hasAnyBanners = !!(versions || (banners && banners.length))
+
+  if (hasAnyBanners) {
+    imports.push(`import DocBanners from './components/DocBanners.vue'`)
+    components.push(`app.component('DocBanners', DocBanners)`)
+  }
+
   if (versions) {
     imports.push(`import NavVersionsFlyout from './components/NavVersionsFlyout.vue'`)
-    imports.push(`import OldVersionBanner from './components/OldVersionBanner.vue'`)
     components.push(`app.component('NavVersionsFlyout', NavVersionsFlyout)`)
-    components.push(`app.component('OldVersionBanner', OldVersionBanner)`)
   }
 
   if (hasI18n) {
@@ -426,15 +540,10 @@ function buildThemeIndexContent(
   const clientBody = [searchHotkeyFix, outlineActiveScroll, sidebarActiveScroll, runtimeBody].filter(Boolean).join('\n\n    ')
   const runtimeBlock = `\n\n    if (!import.meta.env.SSR) {\n      ${clientBody}\n    }`
 
-  const needsLayout = !!(versions || hasI18n)
+  const needsLayout = !!(versions || hasI18n || hasAnyBanners)
   const layoutSlots: string[] = []
-  if (versions) {
-    layoutSlots.push(`      'doc-before': () => h(OldVersionBanner, {
-        latestLabel: ${JSON.stringify(versions.latest.startsWith('v') ? versions.latest : `v${versions.latest}`)},
-        latestLink: ${JSON.stringify(versionsLatestLink || '/')},
-        olderVersions: ${JSON.stringify(versions.older ?? [])},
-        message: ${JSON.stringify(versions.oldVersionBanner?.message || '')},
-      })`)
+  if (hasAnyBanners) {
+    layoutSlots.push(`      'doc-before': () => h(DocBanners, ${buildDocBannersProps(versions, versionsLatestLink, banners)})`)
   }
   if (hasI18n) {
     // After stock translations (CSS-hidden) / social — right side of the navbar

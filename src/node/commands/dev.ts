@@ -31,6 +31,7 @@ export async function dev(root?: string, port?: number) {
   writeVitePressConfig(docsDir, result.config, {
     versions: result.versions,
     versionsLatestLink: result.versionsLatestLink,
+    banners: result.banners,
     changelogSrc: result.changelogSrc,
     contentInjections: result.contentInjections,
     runtimeScriptCode: result.runtimeScriptCode,
@@ -62,6 +63,7 @@ export async function dev(root?: string, port?: number) {
           writeVitePressConfig(newDocsDir, newResult.config, {
             versions: newResult.versions,
             versionsLatestLink: newResult.versionsLatestLink,
+            banners: newResult.banners,
             changelogSrc: newResult.changelogSrc,
             contentInjections: newResult.contentInjections,
             runtimeScriptCode: newResult.runtimeScriptCode,

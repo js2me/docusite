@@ -1,5 +1,5 @@
 import type { UserConfig, DefaultTheme } from 'vitepress'
-import type { DocusiteConfig, DocusiteContentInjection, DocusiteLocale, DocusiteNav, DocusiteSearch, DocusiteSitemapOptions, DocusiteVersions } from '../../shared/types.js'
+import type { DocusiteConfig, DocusiteContentInjection, DocusiteLocale, DocusiteNav, DocusiteSearch, DocusiteSitemapOptions, DocusiteScopedBanner, DocusiteVersions } from '../../shared/types.js'
 import { prepareContentInjections } from './content-injections.js'
 import { detectFrameworkMarksInMarkdown, type FrameworkMarkName } from './framework-marks.js'
 import { resolveRuntimeScriptCode } from './runtime-script.js'
@@ -74,6 +74,7 @@ export interface TransformResult {
   config: UserConfig<DefaultTheme.Config>
   versions?: DocusiteVersions
   versionsLatestLink?: string
+  banners?: DocusiteScopedBanner[]
   changelogSrc?: string
   contentInjections?: DocusiteContentInjection[]
   runtimeScriptCode?: string
@@ -173,6 +174,14 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
         olderVersions: v.older,
       },
     } as any)
+
+    // Deprecation warning for oldVersionBanner
+    if (v.oldVersionBanner) {
+      console.warn(
+        '[docusite] `versions.oldVersionBanner` is deprecated. ' +
+        'Use per-version `banner` on `versions.older[]` items and `versions.latestBanner` instead.',
+      )
+    }
   }
 
   if (config.changelog !== false) {
@@ -311,6 +320,7 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
     config: vpConfig,
     versions: config.versions,
     versionsLatestLink: config.versions ? (findFirstLink(config.sidebar) || '/') : undefined,
+    banners: config.banners,
     changelogSrc,
     contentInjections,
     runtimeScriptCode: resolveRuntimeScriptCode(config.runtimeScript, cwd, docsDir),

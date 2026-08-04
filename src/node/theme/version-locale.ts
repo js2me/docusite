@@ -105,6 +105,15 @@ export function isOldVersionPath(
   return false
 }
 
+/** Whether `relativePath` belongs to the latest version (no version segment, or not matching any older version). */
+export function isLatestVersionPath(
+  relativePath: string,
+  olderVersions?: Array<{ link: string }>,
+): boolean {
+  if (!olderVersions?.length) return true
+  return !isOldVersionPath(relativePath, olderVersions)
+}
+
 /** Label for the version flyout button on the current page. */
 export function currentVersionLabel(
   relativePath: string,
