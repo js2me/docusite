@@ -1,5 +1,11 @@
 # docusite
 
+## 0.1.11
+
+### Patch Changes
+
+- e765b5d: add global banners
+
 ## 0.1.10
 
 ### Patch Changes
