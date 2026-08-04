@@ -1,5 +1,11 @@
 # docusite
 
+## 0.1.12
+
+### Patch Changes
+
+- 520f22d: fix doc banners icon position
+
 ## 0.1.11
 
 ### Patch Changes
