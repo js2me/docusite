@@ -48,6 +48,21 @@ export default defineConfig({
 | `src` | `string` | — | Путь к файлу CHANGELOG.md (относительно корня проекта) |
 | `link` | `string?` | `'/changelog'` | Путь ссылки в навигации |
 
+### Массив — changelog пакетов монорепозитория
+
+Передайте массив объектов, чтобы Docusite скопировал changelog каждого пакета в отдельную страницу:
+
+```ts
+export default defineConfig({
+  changelog: [
+    { name: 'core', path: 'packages/core/CHANGELOG.md' },
+    { name: 'cli', path: 'packages/cli/CHANGELOG.md' },
+  ],
+})
+```
+
+В навигации останется одна ссылка `CHANGELOG` на `/changelog`. На странице появятся вкладки `core` и `cli`; первая вкладка выбрана по умолчанию.
+
 ### `false` — скрыть
 
 Убирает ссылку на CHANGELOG из навигации:

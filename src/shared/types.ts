@@ -168,6 +168,14 @@ export interface DocusiteChangelog {
   link?: string
 }
 
+/** A changelog source for one package in a monorepo. */
+export interface DocusiteChangelogPackage {
+  /** Package name displayed in the navigation. */
+  name: string
+  /** Path to the package's CHANGELOG.md, relative to the project root. */
+  path: string
+}
+
 // ---------------------------------------------------------------------------
 // Source links (rewrite markdown links to GitHub source)
 // ---------------------------------------------------------------------------
@@ -269,8 +277,8 @@ export interface DocusiteConfig {
    */
   banners?: DocusiteScopedBanner[]
 
-  /** Show CHANGELOG link in the navbar. `true` = default, `false` = hidden, `string` = custom link, `{ src }` = copy file from path */
-  changelog?: boolean | string | DocusiteChangelog
+  /** Show CHANGELOG link in the navbar. An array configures changelogs for monorepo packages. */
+  changelog?: boolean | string | DocusiteChangelog | DocusiteChangelogPackage[]
 
   /** Search provider (default: `'local'`) */
   search?: DocusiteSearch

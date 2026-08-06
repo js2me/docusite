@@ -227,7 +227,8 @@ export interface WriteOptions {
   versions?: DocusiteVersions
   versionsLatestLink?: string
   banners?: DocusiteScopedBanner[]
-  changelogSrc?: string
+  changelogSources?: Array<{ src: string; destination: string }>
+  changelogTabs?: Array<{ name: string; destination: string }>
   contentInjections?: DocusiteContentInjection[]
   runtimeScriptCode?: string
   hasPathKeyedNav?: boolean
@@ -261,20 +262,30 @@ export function writeVitePressConfig(
     options.versions,
     options.versionsLatestLink,
     options.banners,
+    options.changelogTabs,
     options.runtimeScriptCode,
     options.frameworkMarks ?? [],
     options.hasI18n ?? false,
   )
 
-  // Copy changelog source file into docs dir
-  if (options.changelogSrc) {
-    const srcPath = resolve(process.cwd(), options.changelogSrc)
-    const dstPath = resolve(docsDir, 'changelog.md')
+  // Copy changelog source files into the docs dir
+  for (const source of options.changelogSources ?? []) {
+    const srcPath = resolve(process.cwd(), source.src)
+    const dstPath = resolve(docsDir, source.destination)
     if (existsSync(srcPath)) {
+      mkdirSync(dirname(dstPath), { recursive: true })
       copyFileSync(srcPath, dstPath)
     } else {
       console.warn(`[docusite] Changelog source not found: ${srcPath}`)
     }
+  }
+
+  if (options.changelogTabs?.length) {
+    writeFileSync(
+      resolve(docsDir, 'changelog.md'),
+      '---\noutline: false\n---\n\n# Changelog\n\n<ChangelogTabs />\n',
+      'utf-8',
+    )
   }
 
   // Ensure .vitepress/ is gitignored
@@ -340,6 +351,7 @@ function buildDocBannersProps(
   versions?: DocusiteVersions,
   versionsLatestLink?: string,
   banners?: DocusiteScopedBanner[],
+  changelogTabs?: Array<{ name: string; destination: string }>,
 ): string {
   const latestLabel = versions
     ? (versions.latest.startsWith('v') ? versions.latest : `v${versions.latest}`)
@@ -385,6 +397,7 @@ function writeThemeFiles(
   versions?: DocusiteVersions,
   versionsLatestLink?: string,
   banners?: DocusiteScopedBanner[],
+  changelogTabs?: Array<{ name: string; destination: string }>,
   runtimeScriptCode?: string,
   frameworkMarks: FrameworkMarkName[] = [],
   hasI18n = false,
@@ -461,11 +474,18 @@ function writeThemeFiles(
     }
   }
 
+  const changelogTabsComponent = resolve(componentsDir, 'ChangelogTabs.vue')
+  if (changelogTabs?.length) {
+    writeFileSync(changelogTabsComponent, buildChangelogTabsComponent(changelogTabs), 'utf-8')
+  } else if (existsSync(changelogTabsComponent)) {
+    unlinkSync(changelogTabsComponent)
+  }
+
   // Write theme/index.ts with the required component registrations
   const themeIndex = resolve(themeDir, 'index.ts')
   writeFileSync(
     themeIndex,
-    buildThemeIndexContent(versions, versionsLatestLink, banners, runtimeScriptCode, frameworkMarks, hasI18n),
+    buildThemeIndexContent(versions, versionsLatestLink, banners, changelogTabs, runtimeScriptCode, frameworkMarks, hasI18n),
     'utf-8',
   )
 }
@@ -474,6 +494,7 @@ function buildThemeIndexContent(
   versions?: DocusiteVersions,
   versionsLatestLink?: string,
   banners?: DocusiteScopedBanner[],
+  changelogTabs?: Array<{ name: string; destination: string }>,
   runtimeScriptCode?: string,
   frameworkMarks: FrameworkMarkName[] = [],
   hasI18n = false,
@@ -504,6 +525,11 @@ function buildThemeIndexContent(
   if (hasI18n) {
     imports.push(`import NavBarTranslations from './components/NavBarTranslations.vue'`)
     imports.push(`import NavScreenTranslations from './components/NavScreenTranslations.vue'`)
+  }
+
+  if (changelogTabs?.length) {
+    imports.push(`import ChangelogTabs from './components/ChangelogTabs.vue'`)
+    components.push(`app.component('ChangelogTabs', ChangelogTabs)`)
   }
 
   imports.push(`import type { Theme } from 'vitepress'`)
@@ -569,6 +595,74 @@ export default {
     ${enhanceAppBody}${runtimeBlock}
   },${layoutBlock}
 } satisfies Theme
+`
+}
+
+function buildChangelogTabsComponent(
+  tabs: Array<{ name: string; destination: string }>,
+): string {
+  const imports = tabs.map((tab, index) =>
+    `import Changelog${index} from '../../../${tab.destination}'`,
+  )
+  const entries = tabs.map((tab, index) =>
+    `{ name: ${JSON.stringify(tab.name)}, component: Changelog${index} }`,
+  )
+
+  return `<script setup lang="ts">
+import { computed, ref } from 'vue'
+${imports.join('\n')}
+
+const tabs = [${entries.join(', ')}]
+const activeTab = ref(0)
+const activeComponent = computed(() => tabs[activeTab.value]?.component)
+</script>
+
+<template>
+  <div class="docusite-changelog-tabs">
+    <div class="docusite-changelog-tab-list" role="tablist" aria-label="Changelog packages">
+      <button
+        v-for="(tab, index) in tabs"
+        :key="tab.name"
+        class="docusite-changelog-tab"
+        :class="{ active: activeTab === index }"
+        :aria-selected="activeTab === index"
+        role="tab"
+        type="button"
+        @click="activeTab = index"
+      >
+        {{ tab.name }}
+      </button>
+    </div>
+    <div :key="activeTab" role="tabpanel">
+      <component :is="activeComponent" />
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.docusite-changelog-tab-list {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0 2rem;
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+
+.docusite-changelog-tab {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 0.6rem 0.8rem;
+  background: transparent;
+  color: var(--vp-c-text-2);
+  cursor: pointer;
+  font: inherit;
+}
+
+.docusite-changelog-tab:hover,
+.docusite-changelog-tab.active {
+  border-bottom-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+}
+</style>
 `
 }
 
@@ -826,7 +920,7 @@ function serializeObject(obj: Record<string, unknown>, indent: number): string {
 
 function ensureGitignore(docsDir: string): void {
   const gitignorePath = resolve(docsDir, '.gitignore')
-  const entries = ['.vitepress/', 'changelog.md']
+  const entries = ['.vitepress/', 'changelog.md', 'changelog/']
 
   let content = ''
   if (existsSync(gitignorePath)) {

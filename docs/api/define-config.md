@@ -63,8 +63,8 @@ interface DocusiteConfig {
   /** Глобальные баннеры-объявления, ограниченные префиксом пути (см. [Баннеры](/guide/banners)) */
   banners?: DocusiteScopedBanner[]
 
-  /** Ссылка на CHANGELOG в навигации. true = по умолчанию, false = скрыть, string = кастомная ссылка, { src } = копировать файл */
-  changelog?: boolean | string | DocusiteChangelog
+  /** Ссылка на CHANGELOG в навигации. Массив задаёт changelog-файлы пакетов монорепозитория. */
+  changelog?: boolean | string | DocusiteChangelog | DocusiteChangelogPackage[]
 
   /** Провайдер поиска (по умолчанию: 'local') */
   search?: DocusiteSearch
@@ -233,6 +233,13 @@ interface DocusiteChangelog {
   src: string
   /** Кастомный путь ссылки (по умолчанию: '/changelog') */
   link?: string
+}
+
+interface DocusiteChangelogPackage {
+  /** Имя пакета в навигации */
+  name: string
+  /** Путь к CHANGELOG.md (относительно корня проекта) */
+  path: string
 }
 ```
 

@@ -131,6 +131,48 @@ describe('transformConfig: llms title option', () => {
 })
 
 // ---------------------------------------------------------------------------
+// Changelog
+// ---------------------------------------------------------------------------
+
+describe('transformConfig: changelog', () => {
+  it('creates one changelog nav item and tabs per monorepo package', () => {
+    const result = transformConfig({
+      changelog: [
+        { name: 'Core', path: 'packages/core/CHANGELOG.md' },
+        { name: 'CLI tools', path: 'packages/cli/CHANGELOG.md' },
+      ],
+      llms: false,
+    }, '/docs')
+
+    expect(result.changelogSources).toEqual([
+      { src: 'packages/core/CHANGELOG.md', destination: 'changelog/core.md' },
+      { src: 'packages/cli/CHANGELOG.md', destination: 'changelog/cli-tools.md' },
+    ])
+    expect(result.changelogTabs).toEqual([
+      { name: 'Core', destination: 'changelog/core.md' },
+      { name: 'CLI tools', destination: 'changelog/cli-tools.md' },
+    ])
+    expect(result.config.themeConfig?.nav).toEqual([
+      { text: 'CHANGELOG', link: '/changelog' },
+    ])
+  })
+
+  it('keeps the single changelog object behavior', () => {
+    const result = transformConfig({
+      changelog: { src: '../CHANGELOG.md', link: '/releases' },
+      llms: false,
+    }, '/docs')
+
+    expect(result.changelogSources).toEqual([
+      { src: '../CHANGELOG.md', destination: 'changelog.md' },
+    ])
+    expect(result.config.themeConfig?.nav).toEqual([
+      { text: 'CHANGELOG', link: '/releases' },
+    ])
+  })
+})
+
+// ---------------------------------------------------------------------------
 // llms-full.txt dev middleware bug
 // ---------------------------------------------------------------------------
 

@@ -1,5 +1,5 @@
 import type { UserConfig, DefaultTheme } from 'vitepress'
-import type { DocusiteConfig, DocusiteContentInjection, DocusiteLocale, DocusiteNav, DocusiteSearch, DocusiteSitemapOptions, DocusiteScopedBanner, DocusiteVersions } from '../../shared/types.js'
+import type { DocusiteChangelogPackage, DocusiteConfig, DocusiteContentInjection, DocusiteLocale, DocusiteNav, DocusiteSearch, DocusiteSitemapOptions, DocusiteScopedBanner, DocusiteVersions } from '../../shared/types.js'
 import { prepareContentInjections } from './content-injections.js'
 import { detectFrameworkMarksInMarkdown, type FrameworkMarkName } from './framework-marks.js'
 import { resolveRuntimeScriptCode } from './runtime-script.js'
@@ -75,7 +75,8 @@ export interface TransformResult {
   versions?: DocusiteVersions
   versionsLatestLink?: string
   banners?: DocusiteScopedBanner[]
-  changelogSrc?: string
+  changelogSources?: Array<{ src: string; destination: string }>
+  changelogTabs?: Array<{ name: string; destination: string }>
   contentInjections?: DocusiteContentInjection[]
   runtimeScriptCode?: string
   hasPathKeyedNav?: boolean
@@ -160,7 +161,8 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
 
   // -- Build auto-appended nav items (versions flyout, changelog, llms) --
   const autoNavItems: DefaultTheme.NavItem[] = []
-  let changelogSrc: string | undefined
+  let changelogSources: Array<{ src: string; destination: string }> | undefined
+  let changelogTabs: Array<{ name: string; destination: string }> | undefined
 
   if (config.versions) {
     const v = config.versions
@@ -185,8 +187,19 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
   }
 
   if (config.changelog !== false) {
-    if (typeof config.changelog === 'object') {
-      changelogSrc = config.changelog.src
+    if (Array.isArray(config.changelog)) {
+      const usedSlugs = new Set<string>()
+      changelogTabs = config.changelog.map((item) => {
+        const slug = uniqueChangelogSlug(item, usedSlugs)
+        return { name: item.name, destination: `changelog/${slug}.md` }
+      })
+      changelogSources = config.changelog.map((item, index) => ({
+        src: item.path,
+        destination: changelogTabs![index]!.destination,
+      }))
+      autoNavItems.push({ text: 'CHANGELOG', link: '/changelog' })
+    } else if (typeof config.changelog === 'object') {
+      changelogSources = [{ src: config.changelog.src, destination: 'changelog.md' }]
       const changelogLink = config.changelog.link ?? '/changelog'
       autoNavItems.push({ text: 'CHANGELOG', link: changelogLink })
     } else {
@@ -321,7 +334,8 @@ export function transformConfig(config: DocusiteConfig, docsDir: string, cwd = p
     versions: config.versions,
     versionsLatestLink: config.versions ? (findFirstLink(config.sidebar) || '/') : undefined,
     banners: config.banners,
-    changelogSrc,
+    changelogSources,
+    changelogTabs,
     contentInjections,
     runtimeScriptCode: resolveRuntimeScriptCode(config.runtimeScript, cwd, docsDir),
     hasPathKeyedNav,
@@ -342,6 +356,21 @@ function resolvePublicAssetPath(path: string): string {
   const normalized = path.replace(/\\/g, '/')
   const withoutPublic = normalized.replace(/^(?:\/)?public\//, '/')
   return withoutPublic.startsWith('/') ? withoutPublic : `/${withoutPublic}`
+}
+
+/** Create a stable URL/file name for a monorepo package changelog. */
+function uniqueChangelogSlug(item: DocusiteChangelogPackage, used: Set<string>): string {
+  const base = item.name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'package'
+
+  let slug = base
+  let suffix = 2
+  while (used.has(slug)) slug = `${base}-${suffix++}`
+  used.add(slug)
+  return slug
 }
 
 /** Prefix a root-absolute asset path with VitePress `base` (e.g. `/docusite` + `/logo.svg`). */

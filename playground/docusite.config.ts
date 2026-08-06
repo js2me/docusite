@@ -158,7 +158,10 @@ export default defineConfig({
       },
     ],
   },
-  changelog: { src: 'CHANGELOG.md' },
+  changelog: [
+    { name: 'docusite', path: 'CHANGELOG.md' },
+    { name: 'core', path: 'packages/core/CHANGELOG.md' },
+  ],
   search: 'local',
   llms: true,
   versions: {
